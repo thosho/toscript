@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Script Screenplay App</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="toScript.js"></script>
+</head>
+<body>
+    <header>
+        <h1>To Script Screenplay Writer</h1>
+        <nav>
+            <button id="project-info-btn" title="Project Info">Project Info</button>
+            <button id="open-project-btn" title="Open Project">Open Project</button>
+            <button id="save-project-btn" title="Save Project">Save Project</button>
+            <!-- Add other existing buttons here if needed, e.g., -->
+            <button id="new-btn" title="New">New</button>
+            <button id="share-btn" title="Share">Share</button>
+            <!-- etc. -->
+        </nav>
+    </header>
+    <main>
+        <textarea id="fountain-input" placeholder="Type your screenplay here..."></textarea>
+        <input type="file" id="file-input" style="display:none" accept=".filmproj,application/json">
+    </main>
+    <footer>
+        <div id="status-message"></div>
+    </footer>
+
+    <!-- Modals (Added for Project Info, similar to To Make) -->
+    <div id="project-info-modal" class="modal" style="display:none;">
+        <!-- Modal content will be dynamically inserted -->
+    </div>
+</body>
+</html>
