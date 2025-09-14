@@ -3,34 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>To Script Screenplay App</title>
-    <link rel="stylesheet" href="styles.css">
-    <script defer src="script.js"></script>
+    <title>ToscripT</title>
+    <script src="./js/tailwind.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="./js/fountain.js" defer></script>
+   <script src="./js/jspdf.umd.min.js" defer></script>
 </head>
-<body>
-    <header>
-        <h1>To Script Screenplay Writer</h1>
-        <nav>
-            <button id="project-info-btn" title="Project Info">Project Info</button>
-            <button id="open-project-btn" title="Open Project">Open Project</button>
-            <button id="save-project-btn" title="Save Project">Save Project</button>
-            <!-- Add other existing buttons here if needed, e.g., -->
-            <button id="new-btn" title="New">New</button>
-            <button id="share-btn" title="Share">Share</button>
-            <!-- etc. -->
-        </nav>
-    </header>
-    <main>
-        <textarea id="fountain-input" placeholder="Type your screenplay here..."></textarea>
-        <input type="file" id="file-input" style="display:none" accept=".filmproj,application/json">
-    </main>
-    <footer>
-        <div id="status-message"></div>
-    </footer>
+<body class="bg-gray-900 text-gray-200 flex flex-col h-screen overflow-hidden">
 
-    <!-- Modals (Added for Project Info, similar to To Make) -->
-    <div id="project-info-modal" class="modal" style="display:none;">
+    <header id="main-header" class="text-center py-2 border-b border-gray-700 relative flex items-center justify-between px-4">
+        <button id="hamburger-btn" class="text-white p-2 rounded-full hover:bg-gray-700 z-30" title="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+        </button>
+        <h1 class="text-2xl font-bold text-white absolute left-1/2 -translate-x-1/2" style="font-family: 'Courier Prime', monospace;">
+            ToscripT
+        </h1>
+        <div class="flex items-center gap-2">
+            <button id="scene-navigator-btn" class="text-white p-2 rounded-full hover:bg-gray-700 z-30" title="Scene Navigator">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-list-nested" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M4.5 11.5A.5.5 0 0 1 5 11h10a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 1 3h10a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+            </button>
+            <button id="project-info-btn" class="text-white p-2 rounded-md hover:bg-gray-700 z-30" title="Project Info">Project Info</button>
+            <button id="open-project-btn" class="text-white p-2 rounded-md hover:bg-gray-700 z-30" title="Open Project">Open Project</button>
+            <button id="save-project-btn" class="text-white p-2 rounded-md hover:bg-gray-700 z-30" title="Save Project">Save Project</button>
+        </div>
+    </header>
+
+    <div id="menu-panel" class="absolute top-14 left-0 w-52 bg-gray-800 shadow-lg z-40 transform -translate-x-full transition-transform duration-300 ease-in-out rounded-br-lg">
+        <div class="p-4">
+            <nav class="flex flex-col space-y-2">
+                <a href="#" id="new-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md">New Project</a>
+                <a href="#" id="open-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md">Open...</a>
+                <a href="#" id="title-page-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md">Title Page</a>
+                <div class="relative">
+                    <a href="#" id="save-menu-btn" class="w-full text-left text-gray-300 hover:bg-gray-700 p-2 rounded-md">Save As...</a>
+                    <div id="save-menu" class="mt-1 ml-4 hidden">
+                        <a href="#" id="save-fountain-btn" class="block text-gray-300 hover:bg-gray-600 p-2 rounded-md">.fountain</a>
+                        <a href="#" id="save-fdx-btn" class="block text-gray-300 hover:bg-gray-600 p-2 rounded-md">.fdx</a>
+                        <a href="#" id="save-pdf-btn" class="block text-gray-300 hover:bg-gray-600 p-2 rounded-md">.pdf</a>
+                    </div>
+                </div>
+                 <a href="#" id="auto-save-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md flex justify-between items-center">
+                    <span>Auto-Save</span>
+                    <span id="auto-save-indicator" class="w-4 h-4 rounded-full bg-gray-500"></span>
+                </a>
+                <a href="#" id="share-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md">Share</a>
+                <a href="#" id="scene-no-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md flex justify-between items-center">
+                    <span>Scene Nos.</span>
+                    <span id="scene-no-indicator" class="w-4 h-4 rounded-full bg-green-500"></span>
+                </a>
+                <a href="#" id="info-btn" class="text-gray-300 hover:bg-gray-700 p-2 rounded-md">Info</a>
+                <a href="#" id="go-pro-btn" class="text-yellow-300 hover:bg-yellow-500 hover:text-gray-900 bg-gray-700 p-2 rounded-md font-bold text-center">Go Pro</a>
+            </nav>
+        </div>
+    </div>
+
+    <main class="main-content flex-grow overflow-hidden">
+        <div id="write-view" class="h-full flex flex-col">
+            <div id="main-toolbar" class="bg-gray-800 p-2 flex items-center justify-center flex-wrap gap-2 shadow-md flex-shrink-0">
+                <button id="zoom-in-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md text-sm" title="Zoom In">+</button>
+                <button id="zoom-out-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md text-sm" title="Zoom Out">-</button>
+            </div>
+            <div class="flex-grow p-4 flex gap-2 overflow-hidden relative">
+                 <textarea id="fountain-input" class="flex-grow h-full bg-gray-800 border border-gray-700 rounded-lg p-4 text-gray-200 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                <div id="desktop-side-toolbar" class="flex flex-col gap-2 flex-shrink-0">
+                    <button id="fullscreen-btn-inline-editor" class="bg-gray-700 hover:bg-gray-800 text-white font-bold p-2 rounded-md text-2xl" title="Toggle Fullscreen">⛶</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold p-2 rounded-md text-sm" data-action="scene" title="Cycle Scene">I/E</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold p-2 rounded-md text-sm" data-action="time" title="Cycle Time">D/N</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold p-2 rounded-md text-sm" data-action="caps" title="Toggle Case">C</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold p-2 rounded-md text-sm" data-action="parens" title="Add Parentheses">()</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold p-2 rounded-md text-sm" data-action="transition" title="Cycle Transition">T</button>
+                    <button id="undo-btn-side" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm disabled:opacity-50" disabled title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/></svg></button>
+                    <button id="redo-btn-side" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm disabled:opacity-50" disabled title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966a.25.25 0 0 1 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg></button>
+                </div>
+            </div>
+            <div class="p-4 flex-shrink-0">
+                <div id="mobile-bottom-toolbar" class="hidden bg-gray-800 p-2 items-center justify-around flex-wrap gap-2 shadow-md rounded-lg">
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm" data-action="caps" title="Toggle Case">C</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm" data-action="parens" title="Add Parentheses">()</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm" data-action="scene" title="Cycle Scene">I/E</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm" data-action="time" title="Cycle Time">D/N</button>
+                    <button class="action-btn bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-md text-sm" data-action="transition" title="Cycle Transition">T</button>
+                </div>
+                <button id="show-script-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg text-lg">TO SCRIPT</button>
+            </div>
+        </div>
+        <div id="script-view" class="h-full flex-col hidden relative">
+            <div class="flex-grow p-4 overflow-hidden">
+                <div id="screenplay-output" class="w-full h-full bg-white text-black rounded-lg p-6 md:p-8 overflow-y-auto"></div>
+            </div>
+            <div class="p-4 flex-shrink-0">
+                <button id="show-write-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-lg text-lg">TO WRITE</button>
+            </div>
+        </div>
+    </main>
+
+    <div id="scene-navigator-panel" class="absolute top-0 right-0 h-full w-80 bg-gray-800 shadow-lg z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col"><div class="p-4 border-b border-gray-700 flex justify-between items-center"><div><h2 class="text-xl font-bold text-white">Scene Navigator</h2><p class="text-sm text-gray-400">Drag to reorder scenes</p></div><button id="close-navigator-btn" class="text-gray-400 hover:text-white text-2xl">&times;</button></div><ul id="scene-list" class="flex-grow overflow-y-auto p-2"></ul></div>
+    <div id="info-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-start p-4 hidden z-50"><div class="bg-gray-800 rounded-xl shadow-xl w-[92vw] max-w-sm sm:max-w-md md:max-w-lg p-4 sm:p-5 md:p-6 relative overflow-y-auto max-h-[80vh]"><button id="close-info-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button><h2 class="text-2xl font-bold mb-4 text-white">Info & Help</h2><h3 class="text-xl font-semibold mt-4 mb-2 text-white">Fountain Syntax</h3><ul class="list-disc list-inside text-gray-300 space-y-1"><li><strong class="text-white">Scene Heading:</strong> Line starts with `INT.` or `EXT.`.</li><li><strong class="text-white">Character:</strong> Any line in all uppercase.</li><li><strong class="text-white">Dialogue:</strong> Any text following a Character.</li><li><strong class="text-white">Parenthetical:</strong> Text inside `(parentheses)` below a Character.</li><li><strong class="text-white">Transition:</strong> Line ends with `TO:` or is `FADE OUT.` etc.</li></ul><h3 class="text-xl font-semibold mt-6 mb-2 text-white">Button Guide</h3><ul class="list-disc list-inside text-gray-300 space-y-1"><li><strong class="text-white">C:</strong> Toggles selected text or current line between UPPERCASE and lowercase.</li><li><strong class="text-white">():</strong> Wraps selected text in parentheses.</li><li><strong class="text-white">I / E:</strong> Inserts `INT.` or `EXT.` for scene headings.</li><li><strong class="text-white">D / N:</strong> Appends ` - DAY` or ` - NIGHT` to the current line.</li><li><strong class="text-white">T:</strong> Inserts and cycles through transitions (`CUT TO:`, `FADE IN:`, etc.).</li></ul><hr class="border-gray-700 my-4">
+<section id="about-section" class="mt-2">
+  <h3 class="text-xl font-semibold text-white">About</h3>
+  <p class="text-gray-300 text-sm sm:text-base">
+    Designed by <span class="font-semibold">Thosho Tech</span>.
+  </p>
+</section>
+</div></div>
+    <div id="title-page-modal"
+         class="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-start p-4 hidden z-50
+                w-[85vw]"><div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 relative"><button id="close-title-modal-btn" class="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button><h2 class="text-2xl font-bold mb-4 text-white">First Page</h2><div class="space-y-4"><div><label for="title-input" class="block text-sm font-medium text-gray-300">Title</label><input type="text" id="title-input" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></div><div><label for="author-input" class="block text-sm font-medium text-gray-300">Writer Name</label><input type="text" id="author-input" class="mt-1 block w-full bg-gray-700 border border-gray-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"></div></div><div class="mt-6"><button id="save-title-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Save</button></div></div></div>
+    <div id="project-info-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-start p-4 hidden z-50">
         <!-- Modal content will be dynamically inserted -->
     </div>
+    <input type="file" id="file-input" class="hidden" accept=".filmproj,application/json">
+
+    <script src="script.js"></script>
 </body>
 </html>
