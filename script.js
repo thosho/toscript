@@ -235,8 +235,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSceneNumbers() { showSceneNumbers = !showSceneNumbers; updateSceneNoIndicator(); saveProjectData(); if (scriptView.classList.contains('active')) { renderScript(); } }
     function updateSceneNoIndicator() { const indicator = document.getElementById('scene-no-indicator'); if (showSceneNumbers) { indicator.classList.add('on'); indicator.classList.remove('off'); } else { indicator.classList.add('off'); indicator.classList.remove('on'); } }
     function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
-    function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
-    
-    // --- THIS IS THE FIX ---
-    initialize();
-});
+    function updateSceneNavigator() { 
+    const output = fountain.parse(fountainInput.value); 
+    sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); 
+    new Sortable(sceneList, { 
+        animation: 150, 
+        ghostClass: 'dragging', 
+        onEnd: (evt) => { /* Reordering logic can be enhanced here */ } 
+    }); 
+}
+
+// Initialize the application
+setupEventListeners();
+loadProjectData();
+setPlaceholder();
+history.updateButtons();
