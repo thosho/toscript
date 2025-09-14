@@ -473,9 +473,11 @@
             function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
             
             // --- THIS IS THE FIX ---
-            initialize();
+            setupEventListeners();
+            loadProjectData();
+            setPlaceholder();
+            history.updateButtons();
         });
     </script>
 </body>
 </html>
-
