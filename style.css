@@ -101,7 +101,7 @@ body.fullscreen-active .main-content { height: 100vh; }
    ================================================================= */
 @media (max-width: 768px) {
     #desktop-side-toolbar { display: none; }
-    #mobile-bottom-toolbar { display: flex; justify-content: space-around; gap: 0.25rem; margin-bottom: 0.5rem; }
+    #mobile-bottom-toolbar { display: flex; justify-content: space-around; gap: 0.5rem; margin-bottom: 0.5rem; }
     .editor-area, .preview-area { padding: 0.25rem; }
     #fountain-input { padding: 1rem; }
     .page-header h1 { font-size: 1.5rem; }
