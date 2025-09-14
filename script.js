@@ -695,11 +695,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }); 
     }
     
-    // --- INITIALIZATION ---
-    console.log("Starting initialization...");
-    setupEventListeners();
-    loadProjectData();
-    setPlaceholder();
-    history.updateButtons();
-    console.log("ToscripT initialization complete!");
+    // --- THIS IS THE FIX ---
+            setupEventListeners();
+            loadProjectData();
+            setPlaceholder();
+            history.updateButtons();
 });
