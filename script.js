@@ -1,12 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- State Variables ---
+    console.log("ToscripT Initializing with Universal Project Logic...");
+
     let projectData = {};
     let fontSize = 16;
     let autoSaveInterval = null;
     let showSceneNumbers = true;
     let currentView = 'write';
 
-    // --- DOM Element References ---
     const fountainInput = document.getElementById('fountain-input');
     const screenplayOutput = document.getElementById('screenplay-output');
     const menuPanel = document.getElementById('menu-panel');
@@ -98,9 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fountainInput.value = projectData.projectInfo.scriptContent || '';
         updateSceneNoIndicator();
     }
-
     function openFountainFile(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { fountainInput.value = e.target.result; history.add(fountainInput.value); saveProjectData(); }; reader.readAsText(file); }
     function saveAsFountain() { const text = getFilteredScriptText(); const blob = new Blob([text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${projectData.projectInfo.projectName}.fountain`; a.click(); URL.revokeObjectURL(url); }
+
     function saveAsFilmProj() {
         projectData.projectInfo.scriptContent = fountainInput.value;
         const universalProject = parseScriptToUniversalFormat(fountainInput.value, projectData.projectInfo);
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
     
-    function handleActionBtn(e) { const action = e.currentTarget.dataset.action; const { selectionStart, selectionEnd, value } = fountainInput; const selectedText = value.substring(selectionStart, selectionEnd); let newText; switch(action) { case 'caps': const lineStart = value.lastIndexOf('\n', selectionStart -1) + 1; const currentLine = value.substring(lineStart, selectionStart); newText = (currentLine === currentLine.toUpperCase()) ? currentLine.toLowerCase() : currentLine.toUpperCase(); fountainInput.setRangeText(newText, lineStart, selectionStart); break; case 'parens': document.execCommand('insertText', false, `(${selectedText})`); break; case 'scene': cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']); break; case 'time': cycleText([' - DAY', ' - NIGHT']); break; case 'transition': cycleText(['CUT TO:', 'FADE IN:', 'FADE OUT.', 'DISSOLVE TO:']); break; } history.add(fountainInput.value); }
+    function handleActionBtn(e) { const action = e.currentTarget.dataset.action; const { selectionStart, selectionEnd, value } = fountainInput; const selectedText = value.substring(selectionStart, selectionEnd); let newText; switch(action) { case 'caps': const lineStart = value.lastIndexOf('\n', selectionStart -1) + 1; const currentLine = value.substring(lineStart, selectionStart); newText = (currentLine === currentLine.toUpperCase()) ? currentLine.toLowerCase() : currentLine.toUpperCase(); fountainInput.setRangeText(newText, lineStart, selectionStart); break; case 'parens': document.execCommand('insertText', false, `(${selectedText})`); break; case 'scene': cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']); break; case 'time': cycleText([' - DAY', ' - NIGHT']); break; case 'transition': cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:']); break; } history.add(fountainInput.value); }
     function cycleText(options) {
         const { value, selectionStart } = fountainInput;
         const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const nextOption = options[(currentIndex + 1) % options.length];
         if (currentIndex > -1) { const newLine = currentLine.replace(options[currentIndex], nextOption); fountainInput.setRangeText(newLine, lineStart, lineEnd > -1 ? lineEnd : value.length); } else { document.execCommand('insertText', false, nextOption); }
     }
-    
+
     function openProjectInfoModal() { const info = projectData.projectInfo || {}; document.getElementById('project-info-modal').classList.add('open'); document.getElementById('prod-name-input').value = info.prodName || ''; document.getElementById('director-name-input').value = info.directorName || ''; }
     function handleSaveProjectInfo() { projectData.projectInfo.prodName = document.getElementById('prod-name-input').value; projectData.projectInfo.directorName = document.getElementById('director-name-input').value; projectData.projectInfo.projectName = projectData.projectInfo.prodName || "Untitled"; saveProjectData(); document.getElementById('project-info-modal').classList.remove('open'); }
     function openTitlePageModal() { document.getElementById('title-page-modal').classList.add('open'); document.getElementById('title-input').value = projectData.projectInfo.projectName || ''; document.getElementById('author-input').value = projectData.projectInfo.prodName || ''; }
@@ -202,41 +202,25 @@ document.addEventListener('DOMContentLoaded', () => {
             else if (category === 'cast' && scene.breakdownData.cast.some(c => c.name.toLowerCase().includes(value))) filteredSceneNumbers.add(scene.sceneNumber);
         });
         
-        let resultLines = [];
-        let include = false;
-        let currentSceneNum = 0;
-        const originalLines = fountainInput.value.split('\n');
-        let lineCounter = 0;
-
-        output.tokens.forEach(token => {
-            if(token.type === 'scene_heading') {
-                currentSceneNum = token.scene_number;
-                include = filteredSceneNumbers.has(currentSceneNum.toString());
-            }
-            if (include) {
-                // This is tricky; we need to reconstruct the original lines for the scene
-                // This simplified version just returns the token text
-                resultLines.push(token.text);
-            }
-        });
-        
-        // A more robust way to reconstruct filtered script
         let finalScript = '';
         let sceneBlocks = fountainInput.value.split(/^(?=INT\.|EXT\.|INT\.\/EXT\.)/im);
+        const titleBlock = /^(?!INT\.|EXT\.|INT\.\/EXT\.)/im.test(sceneBlocks[0]) ? sceneBlocks.shift() : '';
+        finalScript += titleBlock;
+
         sceneBlocks.forEach(block => {
             if (block.trim() === '') return;
             const headingMatch = block.match(/^(INT\.?\/EXT\.?|INT\.|EXT\.).*/i);
             if(headingMatch) {
                 const heading = headingMatch[0];
-                 const sceneNum = fountain.parse(heading, true).tokens[0].scene_number;
+                const sceneNum = fountain.parse(heading, true).tokens[0].scene_number;
                 if(filteredSceneNumbers.has(sceneNum.toString())) {
                     finalScript += block;
                 }
             }
         });
-        return finalScript || "No scenes match your filter.";
+        return finalScript.trim() ? finalScript : "No scenes match your filter.";
     }
-
+    
     function handleFilterChange() { filterValueInput.style.display = filterCategorySelect.value === 'all' ? 'none' : 'block'; filterValueInput.value = ''; applyFilter(); }
     function applyFilter() { if (currentView === 'script') renderScript(); if (currentView === 'card') renderCardView(); }
     async function shareSceneCardAsImage(cardElement) { if(!cardElement) return; try { const canvas = await html2canvas(cardElement, { backgroundColor: getComputedStyle(document.body).getPropertyValue('--surface-color') }); const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`; canvas.toBlob((blob) => { if(navigator.share) { const file = new File([blob], fileName, {type: 'image/png'}); navigator.share({title: `Scene #${cardElement.dataset.sceneNumber}`, files: [file]}).catch(console.error); } else { const link = document.createElement('a'); link.download = fileName; link.href = URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href); } }, 'image/png'); } catch (err) { console.error("Failed to share scene card:", err); alert("Could not generate shareable image."); } }
@@ -244,12 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function createModalHTML(id, title, body, footer) {
         let modal = document.getElementById(id);
-        if(!modal) {
-            modal = document.createElement('div');
-            modal.id = id;
-            modal.className = 'modal';
-            document.body.appendChild(modal);
-        }
+        if(!modal) { modal = document.createElement('div'); modal.id = id; document.body.appendChild(modal); }
+        modal.className = 'modal';
         modal.innerHTML = `<div class="modal-content"><button class="modal-close-btn icon-btn" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button><div class="modal-header"><h2>${title}</h2></div><div class="modal-body">${body}</div><div class="modal-footer">${footer}</div></div>`;
     }
 
@@ -264,12 +244,5 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
     function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
     
-// --- THIS IS THE FIX ---
-            setupEventListeners();
-            loadProjectData();
-            setPlaceholder();
-            history.updateButtons();
+    initialize();
 });
-    </script>
-</body>
-</html>
