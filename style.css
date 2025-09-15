@@ -712,7 +712,7 @@ body.fullscreen-active .main-content {
     border-radius: 4px;
     outline: none;
     background: transparent;
-    margin-right: 15px;
+    margin-right: 8px;
     min-height: 20px;
     color: var(--card-text-color) !important;
 }
@@ -744,6 +744,7 @@ body.fullscreen-active .main-content {
     text-align: center;
     outline: none;
     flex-shrink: 0;
+    transform: translateX(-5px); /* ADD THIS LINE */
 }
 
 .card-scene-number:focus {
