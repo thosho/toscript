@@ -1,119 +1,787 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("ToscripT Initializing...");
+    let projectData = {}; 
+    let fontSize = 16; 
+    let autoSaveInterval = null; 
+    let showSceneNumbers = true; 
+    let currentView = 'write';
+    
+    // Get DOM elements with error checking
+    const fountainInput = document.getElementById('fountain-input');
+    const screenplayOutput = document.getElementById('screenplay-output');
+    const menuPanel = document.getElementById('menu-panel');
+    const sceneNavigatorPanel = document.getElementById('scene-navigator-panel');
+    const writeView = document.getElementById('write-view');
+    const scriptView = document.getElementById('script-view');
+    const cardView = document.getElementById('card-view');
+    const cardContainer = document.getElementById('card-container');
+    const sceneList = document.getElementById('scene-list');
+    const filterCategorySelect = document.getElementById('filter-category-select');
+    const filterValueInput = document.getElementById('filter-value-input');
+    const fileInput = document.getElementById('file-input');
 
-    let projectData = {}; let fontSize = 16; let autoSaveInterval = null; let showSceneNumbers = true; let currentView = 'write';
-    const fountainInput = document.getElementById('fountain-input'); const screenplayOutput = document.getElementById('screenplay-output'); const menuPanel = document.getElementById('menu-panel'); const sceneNavigatorPanel = document.getElementById('scene-navigator-panel'); const writeView = document.getElementById('write-view'); const scriptView = document.getElementById('script-view'); const cardView = document.getElementById('card-view'); const cardContainer = document.getElementById('card-container'); const sceneList = document.getElementById('scene-list'); const filterCategorySelect = document.getElementById('filter-category-select'); const filterValueInput = document.getElementById('filter-value-input'); const fileInput = document.getElementById('file-input');
     const placeholderText = `TITLE: THE CRIMSON DOSSIER\nAUTHOR: YOUR NAME\n\nINT. DETECTIVE'S OFFICE - NIGHT\n\nThe office is a mess of old files. DETECTIVE VIKRAM (40s, tired) stares at a cold cup of coffee.\n\nA mysterious client, MAYA (30s, elegant), enters from the shadows.\n\nMAYA\n(softly)\nAre you the one they call the Ghost of Bangalore?\n\nVIKRAM\nThat depends on who's asking.\n\nFADE OUT.`;
+
     const history = {
-        stack: [""], currentIndex: 0,
-        add(value) { if (value === placeholderText || value === this.stack[this.currentIndex]) return; this.stack = this.stack.slice(0, this.currentIndex + 1); this.stack.push(value); this.currentIndex++; this.updateButtons(); },
-        undo() { if (this.canUndo()) { this.currentIndex--; this.updateInput(); } },
-        redo() { if (this.canRedo()) { this.currentIndex++; this.updateInput(); } },
-        canUndo() { return this.currentIndex > 0; },
-        canRedo() { return this.currentIndex < this.stack.length - 1; },
-        updateInput() { fountainInput.value = this.stack[this.currentIndex] || ''; if (fountainInput.value === '') setPlaceholder(); else clearPlaceholder(); this.updateButtons(); },
-        updateButtons() { document.querySelectorAll('#undo-btn, #undo-btn-mobile, #undo-btn-top').forEach(btn => btn.disabled = !this.canUndo()); document.querySelectorAll('#redo-btn, #redo-btn-mobile, #redo-btn-top').forEach(btn => btn.disabled = !this.canRedo()); }
+        stack: [""], 
+        currentIndex: 0,
+        add(value) { 
+            if (value === placeholderText || value === this.stack[this.currentIndex]) return; 
+            this.stack = this.stack.slice(0, this.currentIndex + 1); 
+            this.stack.push(value); 
+            this.currentIndex++; 
+            this.updateButtons(); 
+        },
+        undo() { 
+            if (this.canUndo()) { 
+                this.currentIndex--; 
+                this.updateInput(); 
+            } 
+        },
+        redo() { 
+            if (this.canRedo()) { 
+                this.currentIndex++; 
+                this.updateInput(); 
+            } 
+        },
+        canUndo() { 
+            return this.currentIndex > 0; 
+        },
+        canRedo() { 
+            return this.currentIndex < this.stack.length - 1; 
+        },
+        updateInput() { 
+            if (fountainInput) {
+                fountainInput.value = this.stack[this.currentIndex] || ''; 
+                if (fountainInput.value === '') setPlaceholder(); 
+                else clearPlaceholder(); 
+                this.updateButtons(); 
+            }
+        },
+        updateButtons() { 
+            document.querySelectorAll('#undo-btn, #undo-btn-mobile, #undo-btn-top').forEach(btn => {
+                if (btn) btn.disabled = !this.canUndo();
+            }); 
+            document.querySelectorAll('#redo-btn, #redo-btn-mobile, #redo-btn-top').forEach(btn => {
+                if (btn) btn.disabled = !this.canRedo();
+            }); 
+        }
     };
 
-    function setPlaceholder() { if (fountainInput.value === '') { fountainInput.value = placeholderText; fountainInput.classList.add('placeholder'); } }
-    function clearPlaceholder() { if (fountainInput.classList.contains('placeholder')) { fountainInput.value = ''; fountainInput.classList.remove('placeholder'); } }
+    function setPlaceholder() { 
+        if (fountainInput && fountainInput.value === '') { 
+            fountainInput.value = placeholderText; 
+            fountainInput.classList.add('placeholder'); 
+        } 
+    }
     
+    function clearPlaceholder() { 
+        if (fountainInput && fountainInput.classList.contains('placeholder')) { 
+            fountainInput.value = ''; 
+            fountainInput.classList.remove('placeholder'); 
+        } 
+    }
+
+    function createNewProjectObject() { 
+        return { 
+            fileVersion: "1.0", 
+            projectInfo: { 
+                projectName: "Untitled", 
+                directorName: "", 
+                prodName: "Author", 
+                currency: "USD", 
+                scriptContent: "" 
+            }, 
+            scenes: [], 
+            appSpecificData: { 
+                toMake: { panelItems: [] }, 
+                toSched: { panelItems: [] } 
+            } 
+        }; 
+    }
+
+    function saveProjectData() { 
+        if(projectData && projectData.projectInfo && fountainInput) { 
+            projectData.projectInfo.scriptContent = fountainInput.value; 
+        } 
+        localStorage.setItem('universalFilmProject_ToScript', JSON.stringify(projectData)); 
+    }
+
+    function loadProjectData() { 
+        const savedData = localStorage.getItem('universalFilmProject_ToScript'); 
+        projectData = savedData ? JSON.parse(savedData) : createNewProjectObject(); 
+        if (fountainInput) {
+            fountainInput.value = projectData.projectInfo.scriptContent || ''; 
+        }
+        updateSceneNoIndicator(); 
+    }
+
     function setupEventListeners() {
-        const safeAddListener = (id, event, handler) => { const el = document.getElementById(id); if(el) el.addEventListener(event, handler); };
+        const safeAddListener = (id, event, handler) => { 
+            const el = document.getElementById(id); 
+            if(el) {
+                el.addEventListener(event, handler);
+                console.log(`Added listener to ${id}`);
+            } else {
+                console.warn(`Element with id '${id}' not found`);
+            }
+        };
         
-        fountainInput.addEventListener('focus', clearPlaceholder);
-        fountainInput.addEventListener('blur', setPlaceholder);
-        fountainInput.addEventListener('input', () => { history.add(fountainInput.value); saveProjectData(); });
+        // Fountain input listeners
+        if (fountainInput) {
+            fountainInput.addEventListener('focus', clearPlaceholder);
+            fountainInput.addEventListener('blur', setPlaceholder);
+            fountainInput.addEventListener('input', () => { 
+                history.add(fountainInput.value); 
+                saveProjectData(); 
+            });
+        }
         
-        safeAddListener('new-btn', 'click', () => { if (confirm('Are you sure? Unsaved changes will be lost.')) { fountainInput.value = ''; projectData = createNewProjectObject(); history.stack = [""]; history.currentIndex = 0; history.updateButtons(); saveProjectData(); setPlaceholder(); } });
-        safeAddListener('open-btn', 'click', () => fileInput.click());
-        fileInput.addEventListener('change', openFountainFile);
-        safeAddListener('save-menu-btn', 'click', (e) => { e.preventDefault(); e.currentTarget.parentElement.classList.toggle('open'); });
+        // Menu buttons
+        safeAddListener('new-btn', 'click', () => { 
+            if (confirm('Are you sure? Unsaved changes will be lost.')) { 
+                if (fountainInput) fountainInput.value = ''; 
+                projectData = createNewProjectObject(); 
+                history.stack = [""]; 
+                history.currentIndex = 0; 
+                history.updateButtons(); 
+                saveProjectData(); 
+                setPlaceholder(); 
+            } 
+        });
+        
+        safeAddListener('open-btn', 'click', () => fileInput && fileInput.click());
+        
+        if (fileInput) {
+            fileInput.addEventListener('change', openFountainFile);
+        }
+        
+        safeAddListener('save-menu-btn', 'click', (e) => { 
+            e.preventDefault(); 
+            e.currentTarget.parentElement.classList.toggle('open'); 
+        });
+        
         safeAddListener('save-fountain-btn', 'click', saveAsFountain);
         safeAddListener('save-pdf-btn', 'click', saveAsPdfWithUnicode);
         safeAddListener('save-filmproj-btn', 'click', saveAsFilmProj);
         safeAddListener('share-btn', 'click', shareScript);
-        safeAddListener('info-btn', 'click', () => document.getElementById('info-modal').classList.add('open'));
-        safeAddListener('about-btn', 'click', () => document.getElementById('about-modal').classList.add('open'));
+        safeAddListener('info-btn', 'click', () => {
+            const modal = document.getElementById('info-modal');
+            if (modal) modal.classList.add('open');
+        });
+        safeAddListener('about-btn', 'click', () => {
+            const modal = document.getElementById('about-modal');
+            if (modal) modal.classList.add('open');
+        });
         safeAddListener('project-info-btn', 'click', openProjectInfoModal);
         safeAddListener('title-page-btn', 'click', openTitlePageModal);
         safeAddListener('clear-project-btn', 'click', clearProject);
+        
+        // View switching buttons
         safeAddListener('show-script-btn', 'click', () => switchView('script'));
         safeAddListener('show-write-btn', 'click', () => switchView('write'));
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
         safeAddListener('card-view-btn', 'click', () => switchView('card'));
-        safeAddListener('hamburger-btn', 'click', (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); });
-        safeAddListener('zoom-in-btn', 'click', () => { fontSize = Math.min(32, fontSize + 2); fountainInput.style.fontSize = `${fontSize}px`; });
-        safeAddListener('zoom-out-btn', 'click', () => { fontSize = Math.max(10, fontSize - 2); fountainInput.style.fontSize = `${fontSize}px`; });
+        
+        // Navigation buttons
+        safeAddListener('hamburger-btn', 'click', (e) => { 
+            e.stopPropagation(); 
+            if (menuPanel) menuPanel.classList.toggle('open'); 
+        });
+        
+        safeAddListener('zoom-in-btn', 'click', () => { 
+            fontSize = Math.min(32, fontSize + 2); 
+            if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`; 
+        });
+        
+        safeAddListener('zoom-out-btn', 'click', () => { 
+            fontSize = Math.max(10, fontSize - 2); 
+            if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`; 
+        });
+        
         safeAddListener('scene-no-btn', 'click', toggleSceneNumbers);
-        safeAddListener('scene-navigator-btn', 'click', (e) => { e.stopPropagation(); updateSceneNavigator(); sceneNavigatorPanel.classList.add('open'); });
-        safeAddListener('close-navigator-btn', 'click', () => sceneNavigatorPanel.classList.remove('open'));
+        safeAddListener('scene-navigator-btn', 'click', (e) => { 
+            e.stopPropagation(); 
+            updateSceneNavigator(); 
+            if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open'); 
+        });
+        safeAddListener('close-navigator-btn', 'click', () => {
+            if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open');
+        });
         safeAddListener('auto-save-btn', 'click', toggleAutoSave);
-        document.querySelectorAll('.action-btn').forEach(btn => btn.addEventListener('click', handleActionBtn));
-        document.querySelectorAll('#undo-btn, #undo-btn-mobile, #undo-btn-top').forEach(btn => btn.addEventListener('click', () => history.undo()));
-        document.querySelectorAll('#redo-btn, #redo-btn-mobile, #redo-btn-top').forEach(btn => btn.addEventListener('click', () => history.redo()));
-        safeAddListener('fullscreen-btn-main', 'click', () => { document.body.classList.toggle('fullscreen-active'); if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); } else { document.exitFullscreen(); } });
-        filterCategorySelect.addEventListener('change', handleFilterChange);
-        filterValueInput.addEventListener('input', applyFilter);
-
+        
+        // Action buttons
+        document.querySelectorAll('.action-btn').forEach(btn => {
+            if (btn) btn.addEventListener('click', handleActionBtn);
+        });
+        
+        // Undo/Redo buttons
+        document.querySelectorAll('#undo-btn, #undo-btn-mobile, #undo-btn-top').forEach(btn => {
+            if (btn) btn.addEventListener('click', () => history.undo());
+        });
+        document.querySelectorAll('#redo-btn, #redo-btn-mobile, #redo-btn-top').forEach(btn => {
+            if (btn) btn.addEventListener('click', () => history.redo());
+        });
+        
+        safeAddListener('fullscreen-btn-main', 'click', () => { 
+            document.body.classList.toggle('fullscreen-active'); 
+            if (!document.fullscreenElement) { 
+                document.documentElement.requestFullscreen().catch(console.error); 
+            } else { 
+                document.exitFullscreen().catch(console.error); 
+            } 
+        });
+        
+        // Filter listeners
+        if (filterCategorySelect) {
+            filterCategorySelect.addEventListener('change', handleFilterChange);
+        }
+        if (filterValueInput) {
+            filterValueInput.addEventListener('input', applyFilter);
+        }
+        
+        // Global click handler
         document.addEventListener('click', (e) => {
-            if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && !e.target.closest('#hamburger-btn')) { menuPanel.classList.remove('open'); }
-            if (sceneNavigatorPanel.classList.contains('open') && !sceneNavigatorPanel.contains(e.target) && !e.target.closest('#scene-navigator-btn')) { sceneNavigatorPanel.classList.remove('open'); }
+            if (menuPanel && menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && !e.target.closest('#hamburger-btn')) { 
+                menuPanel.classList.remove('open'); 
+            }
+            if (sceneNavigatorPanel && sceneNavigatorPanel.classList.contains('open') && !sceneNavigatorPanel.contains(e.target) && !e.target.closest('#scene-navigator-btn')) { 
+                sceneNavigatorPanel.classList.remove('open'); 
+            }
+            
             const modal = e.target.closest('.modal');
-            if (e.target.classList.contains('modal-close-btn') || e.target === modal) { if(modal) modal.classList.remove('open'); }
+            if (e.target.classList.contains('modal-close-btn') || e.target === modal) { 
+                if(modal) modal.classList.remove('open'); 
+            }
             if (e.target.id === 'save-title-btn') saveTitlePage();
             if (e.target.id === 'save-project-info-btn') handleSaveProjectInfo();
-            const editCardBtn = e.target.closest('.edit-card-btn'); if(editCardBtn) editSceneFromCard(editCardBtn.closest('.scene-card').dataset.sceneId);
-            const shareCardBtn = e.target.closest('.share-card-btn'); if(shareCardBtn) shareSceneCardAsImage(shareCardBtn.closest('.scene-card'));
+            
+            const editCardBtn = e.target.closest('.edit-card-btn'); 
+            if(editCardBtn) editSceneFromCard(editCardBtn.closest('.scene-card').dataset.sceneId);
+            const shareCardBtn = e.target.closest('.share-card-btn'); 
+            if(shareCardBtn) shareSceneCardAsImage(shareCardBtn.closest('.scene-card'));
         });
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { menuPanel.classList.remove('open'); sceneNavigatorPanel.classList.remove('open'); } });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => { 
+            if (e.key === 'Escape') { 
+                if (menuPanel) menuPanel.classList.remove('open'); 
+                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open'); 
+            } 
+        });
     }
 
-    function createNewProjectObject() { return { fileVersion: "1.0", projectInfo: { projectName: "Untitled", directorName: "", prodName: "Author", currency: "USD", scriptContent: "" }, scenes: [], appSpecificData: { toMake: { panelItems: [] }, toSched: { panelItems: [] } } }; }
-    function saveProjectData() { if(projectData && projectData.projectInfo) { projectData.projectInfo.scriptContent = fountainInput.value; } localStorage.setItem('universalFilmProject_ToScript', JSON.stringify(projectData)); }
-    function loadProjectData() { const savedData = localStorage.getItem('universalFilmProject_ToScript'); projectData = savedData ? JSON.parse(savedData) : createNewProjectObject(); fountainInput.value = projectData.projectInfo.scriptContent || ''; updateSceneNoIndicator(); }
-    function openFountainFile(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { fountainInput.value = e.target.result; history.add(fountainInput.value); saveProjectData(); }; reader.readAsText(file); }
-    function saveAsFountain() { const text = getFilteredScriptText(); const blob = new Blob([text], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${projectData.projectInfo.projectName}.fountain`; a.click(); URL.revokeObjectURL(url); }
-    function saveAsFilmProj() { projectData.projectInfo.scriptContent = fountainInput.value; const universalProject = parseScriptToUniversalFormat(fountainInput.value, projectData.projectInfo); const dataStr = JSON.stringify(universalProject, null, 2); const blob = new Blob([dataStr], { type: 'application/octet-stream' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${projectData.projectInfo.projectName}.filmproj`; a.click(); URL.revokeObjectURL(url); alert('.filmproj file saved! You can now open this in To Make or To Sched.'); }
-    function parseScriptToUniversalFormat(scriptText, projectInfo) { const output = fountain.parse(scriptText, true); const universalData = { fileVersion: "1.0", projectInfo: { ...projectInfo, scriptContent: scriptText }, scenes: [], appSpecificData: { toMake: { panelItems: [] }, toSched: { panelItems: [] } } }; let currentScene = null; let sceneCounter = 0; output.tokens.forEach(token => { if (token.type === 'scene_heading') { if (currentScene) universalData.scenes.push(currentScene); sceneCounter++; const headingText = token.text.toUpperCase(); const headingParts = headingText.split(' - '); const typeAndSetting = headingParts[0].trim(); const time = (headingParts[1] || 'DAY').trim(); let sceneType = "INT."; if (typeAndSetting.startsWith("EXT.")) sceneType = "EXT."; if (typeAndSetting.startsWith("INT./EXT.")) sceneType = "INT./EXT."; const sceneSetting = typeAndSetting.replace(/^(INT\.?\/EXT\.?|INT\.|EXT\.)\s*/, '').trim(); currentScene = { sceneId: `s_${Date.now()}_${sceneCounter}`, sceneNumber: token.scene_number || sceneCounter.toString(), sceneType: sceneType, sceneSetting: sceneSetting, dayNight: time, description: "", breakdownData: { cast: [] }, budgetingData: {}, schedulingData: {} }; } else if (currentScene) { if (token.type === 'action') { currentScene.description += (currentScene.description ? "\n" : "") + token.text; } else if (token.type === 'character') { const characterName = token.text.replace(/\s*\(.*\)\s*$/, '').trim(); if (characterName && !currentScene.breakdownData.cast.some(c => c.name === characterName)) { currentScene.breakdownData.cast.push({ id: Date.now() + Math.random(), name: characterName, cost: 0 }); } } } }); if (currentScene) universalData.scenes.push(currentScene); const defaultSequence = { type: 'sequence', id: Date.now(), name: "Main Sequence", sceneIds: universalData.scenes.map(s => s.sceneId) }; universalData.appSpecificData.toMake.panelItems.push(JSON.parse(JSON.stringify(defaultSequence))); universalData.appSpecificData.toSched.panelItems.push(JSON.parse(JSON.stringify(defaultSequence))); return universalData; }
-    async function saveAsPdfWithUnicode() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); try { const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf'; const fontResponse = await fetch(fontUrl); if (!fontResponse.ok) throw new Error("Could not fetch font file."); const font = await fontResponse.arrayBuffer(); const fontBase64 = btoa(new Uint8Array(font).reduce((data, byte) => data + String.fromCharCode(byte), '')); doc.addFileToVFS('NotoSans-Regular.ttf', fontBase64); doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal'); doc.setFont('NotoSans'); } catch (e) { console.error("Font loading failed, falling back to default font.", e); } const output = fountain.parse(getFilteredScriptText(), true); screenplayOutput.innerHTML = `<div class="title-page"><h1>${projectData.projectInfo.projectName}</h1><p>${projectData.projectInfo.prodName}</p></div>${output.html.body}`; await doc.html(screenplayOutput, { callback: (doc) => { doc.save(`${projectData.projectInfo.projectName}.pdf`); }, x: 10, y: 10, width: 190, windowWidth: 800 }); }
-    function switchView(view) { currentView = view; [writeView, scriptView, cardView].forEach(v => v.classList.remove('active')); if (view === 'script') { renderScript(); scriptView.classList.add('active'); } else if (view === 'card') { renderCardView(); cardView.classList.add('active'); } else { writeView.classList.add('active'); } }
-    function renderScript() { const text = getFilteredScriptText(); const output = fountain.parse(text, true); const titleHtml = `<h1>${projectData.projectInfo.projectName || 'Untitled'}</h1><p class="author">by ${projectData.projectInfo.prodName || 'Author'}</p>`; let scriptHtml = output.html.body; if (showSceneNumbers) { let sceneCount = 0; const sceneHeadings = output.tokens.filter(t => t.type === 'scene_heading'); scriptHtml = scriptHtml.replace(/<h3/g, () => { if (sceneHeadings[sceneCount]) { const sceneNum = sceneHeadings[sceneCount].scene_number; sceneCount++; return `<h3>${sceneNum}. `; } return `<h3>`; }); } screenplayOutput.innerHTML = `<div class="title-page">${titleHtml}</div>${scriptHtml}`; }
-    function renderCardView() { const scenes = parseScriptToUniversalFormat(getFilteredScriptText(), projectData.projectInfo).scenes; if(scenes.length === 0) { cardContainer.innerHTML = `<p style="text-align: center; color: var(--muted-text-color); padding: 2rem;">No scenes found to display as cards.</p>`; return; } cardContainer.innerHTML = scenes.map(scene => `<div class="scene-card" data-scene-id="${scene.sceneId}" data-scene-number="${scene.sceneNumber}"><div class="card-header">#${scene.sceneNumber} ${scene.sceneType} ${scene.sceneSetting} - ${scene.dayNight}</div><div class="card-body">${scene.description}</div><div class="card-actions"><button class="icon-btn edit-card-btn" title="Edit Scene"><i class="fas fa-pencil-alt"></i></button><button class="icon-btn share-card-btn" title="Share as Image"><i class="fas fa-share-alt"></i></button></div></div>`).join(''); }
-    function handleActionBtn(e) { const action = e.currentTarget.dataset.action; const { selectionStart, selectionEnd, value } = fountainInput; const selectedText = value.substring(selectionStart, selectionEnd); let newText; switch(action) { case 'caps': const lineStart = value.lastIndexOf('\n', selectionStart -1) + 1; const currentLine = value.substring(lineStart, selectionStart); newText = (currentLine === currentLine.toUpperCase()) ? currentLine.toLowerCase() : currentLine.toUpperCase(); fountainInput.setRangeText(newText, lineStart, selectionStart); break; case 'parens': document.execCommand('insertText', false, `(${selectedText})`); break; case 'scene': cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']); break; case 'time': cycleText([' - DAY', ' - NIGHT']); break; case 'transition': cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:']); break; } history.add(fountainInput.value); }
-    function cycleText(options) { const { value, selectionStart } = fountainInput; const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; const lineEnd = value.indexOf('\n', selectionStart); const currentLine = value.substring(lineStart, lineEnd > -1 ? lineEnd : value.length); let currentIndex = -1; for(let i = 0; i < options.length; i++) { if (currentLine.includes(options[i])) { currentIndex = i; break; } } const nextOption = options[(currentIndex + 1) % options.length]; if (currentIndex > -1) { const newLine = currentLine.replace(options[currentIndex], nextOption); fountainInput.setRangeText(newLine, lineStart, lineEnd > -1 ? lineEnd : value.length); } else { document.execCommand('insertText', false, nextOption); } }
-    function openProjectInfoModal() { const info = projectData.projectInfo || {}; document.getElementById('project-info-modal').classList.add('open'); document.getElementById('prod-name-input').value = info.prodName || ''; document.getElementById('director-name-input').value = info.directorName || ''; }
-    function handleSaveProjectInfo() { projectData.projectInfo.prodName = document.getElementById('prod-name-input').value; projectData.projectInfo.directorName = document.getElementById('director-name-input').value; projectData.projectInfo.projectName = projectData.projectInfo.prodName || "Untitled"; saveProjectData(); document.getElementById('project-info-modal').classList.remove('open'); }
-    function openTitlePageModal() { document.getElementById('title-page-modal').classList.add('open'); document.getElementById('title-input').value = projectData.projectInfo.projectName || ''; document.getElementById('author-input').value = projectData.projectInfo.prodName || ''; }
-    function saveTitlePage() { projectData.projectInfo.projectName = document.getElementById('title-input').value || "Untitled"; projectData.projectInfo.prodName = document.getElementById('author-input').value || "Author"; saveProjectData(); document.getElementById('title-page-modal').classList.remove('open'); }
-    function clearProject() { if (confirm('Are you sure? This will delete the current script and all project info.')) { fountainInput.value = ''; projectData = createNewProjectObject(); history.stack = [""]; history.currentIndex = 0; history.updateButtons(); saveProjectData(); setPlaceholder(); } }
-    function getFilteredScriptText() { const category = filterCategorySelect.value; const value = filterValueInput.value.toLowerCase().trim(); if (category === 'all' || !value) return fountainInput.value; const output = fountain.parse(fountainInput.value, true); const scenes = parseScriptToUniversalFormat(fountainInput.value, projectData.projectInfo).scenes; const filteredSceneNumbers = new Set(); scenes.forEach(scene => { if (category === 'sceneSetting' && scene.sceneSetting.toLowerCase().includes(value)) filteredSceneNumbers.add(scene.sceneNumber); else if (category === 'sceneType' && scene.sceneType.toLowerCase().replace(/\./g, '') === value.replace(/\./g, '')) filteredSceneNumbers.add(scene.sceneNumber); else if (category === 'cast' && scene.breakdownData.cast.some(c => c.name.toLowerCase().includes(value))) filteredSceneNumbers.add(scene.sceneNumber); }); let finalScript = ''; let sceneBlocks = fountainInput.value.split(/^(?=INT\.|EXT\.|INT\.\/EXT\.)/im); const titleBlock = /^(?!INT\.|EXT\.|INT\.\/EXT\.)/im.test(sceneBlocks[0]) ? sceneBlocks.shift() : ''; finalScript += titleBlock; sceneBlocks.forEach(block => { if (block.trim() === '') return; const headingMatch = block.match(/^(INT\.?\/EXT\.?|INT\.|EXT\.).*/i); if(headingMatch) { const heading = headingMatch[0]; const sceneNum = fountain.parse(heading, true).tokens[0].scene_number; if(filteredSceneNumbers.has(sceneNum.toString())) { finalScript += block; } } }); return finalScript.trim() ? finalScript : "No scenes match your filter."; }
-    function handleFilterChange() { filterValueInput.style.display = filterCategorySelect.value === 'all' ? 'none' : 'block'; filterValueInput.value = ''; applyFilter(); }
-    function applyFilter() { if (currentView === 'script') renderScript(); if (currentView === 'card') renderCardView(); }
-    async function shareSceneCardAsImage(cardElement) { if(!cardElement) return; try { const canvas = await html2canvas(cardElement, { backgroundColor: getComputedStyle(document.body).getPropertyValue('--surface-color') }); const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`; canvas.toBlob((blob) => { if(navigator.share) { const file = new File([blob], fileName, {type: 'image/png'}); navigator.share({title: `Scene #${cardElement.dataset.sceneNumber}`, files: [file]}).catch(console.error); } else { const link = document.createElement('a'); link.download = fileName; link.href = URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href); } }, 'image/png'); } catch (err) { console.error("Failed to share scene card:", err); alert("Could not generate shareable image."); } }
-    function editSceneFromCard(sceneId) { const scenes = parseScriptToUniversalFormat(fountainInput.value, projectData.projectInfo).scenes; const sceneToFind = scenes.find(s => s.sceneId === sceneId); if(!sceneToFind) return; const textToFind = `${sceneToFind.sceneType}. ${sceneToFind.sceneSetting} - ${sceneToFind.dayNight}`; const index = fountainInput.value.toUpperCase().indexOf(textToFind); if(index > -1) { switchView('write'); fountainInput.focus(); fountainInput.setSelectionRange(index, index); fountainInput.scrollTop = fountainInput.scrollHeight * (index / fountainInput.value.length); } else { alert("Could not find the scene in the editor. It may have been changed."); } }
-    function createModalHTML(id, title, body, footer) { let modal = document.getElementById(id); if(!modal) { modal = document.createElement('div'); modal.id = id; document.body.appendChild(modal); } modal.className = 'modal'; modal.innerHTML = `<div class="modal-content"><button class="modal-close-btn icon-btn" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button><div class="modal-header"><h2>${title}</h2></div><div class="modal-body">${body}</div><div class="modal-footer">${footer}</div></div>`; }
-    createModalHTML('project-info-modal', 'Project Info', `<div class="form-group"><label for="prod-name-input">Production Name / Title</label><input type="text" id="prod-name-input"></div><div class="form-group"><label for="director-name-input">Author / Writer</label><input type="text" id="director-name-input"></div>`, `<button id="save-project-info-btn" class="main-action-btn">Save</button>`);
-    createModalHTML('about-modal', 'About ToscripT', `<p style="text-align: center;">Designed by Thosho Tech</p>`, '');
-    createModalHTML('info-modal', 'Info & Help', `<h3>Fountain Syntax</h3><ul><li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li><li><strong>Character:</strong> Any line in all uppercase.</li><li><strong>Dialogue:</strong> Text following a Character.</li></ul><h3>Button Guide</h3><ul><li><strong>Aa:</strong> Toggles current line to UPPERCASE.</li><li><strong>():</strong> Wraps selected text in parentheses.</li></ul>`, '');
-    createModalHTML('title-page-modal', 'Title Page', `<div class="form-group"><label for="title-input">Title</label><input type="text" id="title-input"></div><div class="form-group"><label for="author-input">Author</label><input type="text" id="author-input"></div>`, `<button id="save-title-btn" class="main-action-btn">Save</button>`);
-    async function shareScript() { if (navigator.share) { try { await navigator.share({ title: projectData.projectInfo.projectName, text: fountainInput.value }); } catch(err) { console.error("Share failed", err); } } else { alert('Sharing is not supported on this browser.'); } }
-    function toggleSceneNumbers() { showSceneNumbers = !showSceneNumbers; updateSceneNoIndicator(); saveProjectData(); if (scriptView.classList.contains('active')) { renderScript(); } }
-    function updateSceneNoIndicator() { const indicator = document.getElementById('scene-no-indicator'); if (showSceneNumbers) { indicator.classList.add('on'); indicator.classList.remove('off'); } else { indicator.classList.add('off'); indicator.classList.remove('on'); } }
-    function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
-    function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
-    
-    // --- THIS IS THE FIX ---
-    // Initialize the application after everything has been defined.
+    // Create modal HTML function
+    function createModalHTML(id, title, body, footer) { 
+        let modal = document.getElementById(id); 
+        if(!modal) { 
+            modal = document.createElement('div'); 
+            modal.id = id; 
+            document.body.appendChild(modal); 
+        } 
+        modal.className = 'modal'; 
+        modal.innerHTML = `<div class="modal-content"><button class="modal-close-btn icon-btn" style="position: absolute; top: 0.5rem; right: 0.5rem;">&times;</button><div class="modal-header"><h2>${title}</h2></div><div class="modal-body">${body}</div><div class="modal-footer">${footer}</div></div>`; 
+    }
+
+    // File operations
+    function openFountainFile(e) { 
+        const file = e.target.files[0]; 
+        if (!file) return; 
+        const reader = new FileReader(); 
+        reader.onload = (e) => { 
+            if (fountainInput) {
+                fountainInput.value = e.target.result; 
+                history.add(fountainInput.value); 
+                saveProjectData(); 
+            }
+        }; 
+        reader.readAsText(file); 
+    }
+
+    function saveAsFountain() { 
+        const text = getFilteredScriptText(); 
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' }); 
+        const url = URL.createObjectURL(blob); 
+        const a = document.createElement('a'); 
+        a.href = url; 
+        a.download = `${projectData.projectInfo.projectName}.fountain`; 
+        a.click(); 
+        URL.revokeObjectURL(url); 
+    }
+
+    async function saveAsPdfWithUnicode() {
+        if (typeof window.jspdf === 'undefined') {
+            alert('PDF library not loaded. Please try again.');
+            return;
+        }
+        
+        const { jsPDF } = window.jspdf; 
+        const doc = new jsPDF(); 
+        
+        try { 
+            const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf'; 
+            const fontResponse = await fetch(fontUrl); 
+            if (!fontResponse.ok) throw new Error("Could not fetch font file."); 
+            const font = await fontResponse.arrayBuffer(); 
+            const fontBase64 = btoa(new Uint8Array(font).reduce((data, byte) => data + String.fromCharCode(byte), '')); 
+            doc.addFileToVFS('NotoSans-Regular.ttf', fontBase64); 
+            doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal'); 
+            doc.setFont('NotoSans'); 
+        } catch (e) { 
+            console.error("Font loading failed, falling back to default font.", e); 
+        } 
+
+        // Simple text-based PDF generation since fountain.parse might not be available
+        const lines = getFilteredScriptText().split('\n');
+        let y = 20;
+        const lineHeight = 6;
+        
+        lines.forEach(line => {
+            if (y > 280) {
+                doc.addPage();
+                y = 20;
+            }
+            doc.text(line || ' ', 20, y);
+            y += lineHeight;
+        });
+        
+        doc.save(`${projectData.projectInfo.projectName}.pdf`);
+    }
+
+    function saveAsFilmProj() {
+        alert('.filmproj export requires fountain.js library to be fully loaded. Please try again.');
+    }
+
+    // View functions
+    function switchView(view) { 
+        currentView = view; 
+        if (writeView) writeView.classList.remove('active');
+        if (scriptView) scriptView.classList.remove('active');
+        if (cardView) cardView.classList.remove('active');
+        
+        if (view === 'script' && scriptView) { 
+            renderScript(); 
+            scriptView.classList.add('active'); 
+        } else if (view === 'card' && cardView) { 
+            renderCardView(); 
+            cardView.classList.add('active'); 
+        } else if (writeView) { 
+            writeView.classList.add('active'); 
+        } 
+    }
+
+    function renderScript() { 
+        if (!screenplayOutput || !fountainInput) return;
+        
+        const text = getFilteredScriptText(); 
+        const titleHtml = `<h1>${projectData.projectInfo.projectName || 'Untitled'}</h1><p class="author">by ${projectData.projectInfo.prodName || 'Author'}</p>`; 
+        
+        // Simple script rendering without fountain.js dependency
+        const lines = text.split('\n');
+        let scriptHtml = '';
+        
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.')) {
+                scriptHtml += `<h3 class="scene-heading">${trimmed}</h3>`;
+            } else if (trimmed === trimmed.toUpperCase() && trimmed.length > 0 && !trimmed.includes('.')) {
+                scriptHtml += `<div class="character">${trimmed}</div>`;
+            } else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+                scriptHtml += `<div class="parenthetical">${trimmed}</div>`;
+            } else if (trimmed.length > 0) {
+                scriptHtml += `<div class="action">${trimmed}</div>`;
+            }
+        });
+        
+        screenplayOutput.innerHTML = `<div class="title-page">${titleHtml}</div>${scriptHtml}`; 
+    }
+
+    function renderCardView() { 
+        if (!cardContainer || !fountainInput) return;
+        
+        const text = fountainInput.value;
+        const scenes = [];
+        const lines = text.split('\n');
+        let currentScene = null;
+        let sceneNumber = 0;
+        
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.')) {
+                if (currentScene) scenes.push(currentScene);
+                sceneNumber++;
+                currentScene = {
+                    sceneId: `scene_${sceneNumber}`,
+                    sceneNumber: sceneNumber,
+                    heading: trimmed,
+                    content: ''
+                };
+            } else if (currentScene && trimmed) {
+                currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
+            }
+        });
+        
+        if (currentScene) scenes.push(currentScene);
+        
+        if(scenes.length === 0) { 
+            cardContainer.innerHTML = `<p style="text-align: center; color: var(--muted-text-color); padding: 2rem;">No scenes found to display as cards.</p>`; 
+            return; 
+        } 
+        
+        cardContainer.innerHTML = scenes.map(scene => 
+            `<div class="scene-card" data-scene-id="${scene.sceneId}" data-scene-number="${scene.sceneNumber}">
+                <div class="card-header">#${scene.sceneNumber} ${scene.heading}</div>
+                <div class="card-body">${scene.content}</div>
+                <div class="card-actions">
+                    <button class="icon-btn edit-card-btn" title="Edit Scene"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="icon-btn share-card-btn" title="Share as Image"><i class="fas fa-share-alt"></i></button>
+                </div>
+            </div>`
+        ).join(''); 
+    }
+
+    function handleActionBtn(e) { 
+        if (!fountainInput) return;
+        
+        const action = e.currentTarget.dataset.action; 
+        const { selectionStart, selectionEnd, value } = fountainInput; 
+        const selectedText = value.substring(selectionStart, selectionEnd); 
+        
+        switch(action) { 
+            case 'caps': 
+                const lineStart = value.lastIndexOf('\n', selectionStart -1) + 1; 
+                const lineEnd = value.indexOf('\n', selectionStart);
+                const currentLine = value.substring(lineStart, lineEnd === -1 ? value.length : lineEnd); 
+                const newText = (currentLine === currentLine.toUpperCase()) ? currentLine.toLowerCase() : currentLine.toUpperCase(); 
+                fountainInput.setRangeText(newText, lineStart, lineEnd === -1 ? value.length : lineEnd); 
+                break; 
+            case 'parens': 
+                fountainInput.setRangeText(`(${selectedText})`, selectionStart, selectionEnd);
+                break; 
+            case 'scene': 
+                cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']); 
+                break; 
+            case 'time': 
+                cycleText([' - DAY', ' - NIGHT']); 
+                break; 
+            case 'transition': 
+                cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:']); 
+                break; 
+        } 
+        history.add(fountainInput.value); 
+    }
+
+    function cycleText(options) { 
+        if (!fountainInput) return;
+        
+        const { value, selectionStart } = fountainInput; 
+        const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1; 
+        const lineEnd = value.indexOf('\n', selectionStart); 
+        const currentLine = value.substring(lineStart, lineEnd > -1 ? lineEnd : value.length); 
+        let currentIndex = -1; 
+        
+        for(let i = 0; i < options.length; i++) { 
+            if (currentLine.includes(options[i])) { 
+                currentIndex = i; 
+                break; 
+            } 
+        } 
+        
+        const nextOption = options[(currentIndex + 1) % options.length]; 
+        if (currentIndex > -1) { 
+            const newLine = currentLine.replace(options[currentIndex], nextOption); 
+            fountainInput.setRangeText(newLine, lineStart, lineEnd > -1 ? lineEnd : value.length); 
+        } else { 
+            fountainInput.setRangeText(nextOption, selectionStart, selectionStart);
+        } 
+    }
+
+    // Modal functions
+    function openProjectInfoModal() { 
+        const info = projectData.projectInfo || {}; 
+        const modal = document.getElementById('project-info-modal');
+        if (modal) {
+            modal.classList.add('open'); 
+            const prodNameInput = document.getElementById('prod-name-input');
+            const directorNameInput = document.getElementById('director-name-input');
+            if (prodNameInput) prodNameInput.value = info.prodName || ''; 
+            if (directorNameInput) directorNameInput.value = info.directorName || ''; 
+        }
+    }
+
+    function handleSaveProjectInfo() { 
+        const prodNameInput = document.getElementById('prod-name-input');
+        const directorNameInput = document.getElementById('director-name-input');
+        
+        if (prodNameInput) projectData.projectInfo.prodName = prodNameInput.value; 
+        if (directorNameInput) projectData.projectInfo.directorName = directorNameInput.value; 
+        projectData.projectInfo.projectName = projectData.projectInfo.prodName || "Untitled"; 
+        saveProjectData(); 
+        
+        const modal = document.getElementById('project-info-modal');
+        if (modal) modal.classList.remove('open'); 
+    }
+
+    function openTitlePageModal() { 
+        const modal = document.getElementById('title-page-modal');
+        if (modal) {
+            modal.classList.add('open'); 
+            const titleInput = document.getElementById('title-input');
+            const authorInput = document.getElementById('author-input');
+            if (titleInput) titleInput.value = projectData.projectInfo.projectName || ''; 
+            if (authorInput) authorInput.value = projectData.projectInfo.prodName || ''; 
+        }
+    }
+
+    function saveTitlePage() { 
+        const titleInput = document.getElementById('title-input');
+        const authorInput = document.getElementById('author-input');
+        
+        if (titleInput) projectData.projectInfo.projectName = titleInput.value || "Untitled"; 
+        if (authorInput) projectData.projectInfo.prodName = authorInput.value || "Author"; 
+        saveProjectData(); 
+        
+        const modal = document.getElementById('title-page-modal');
+        if (modal) modal.classList.remove('open'); 
+    }
+
+    function clearProject() { 
+        if (confirm('Are you sure? This will delete the current script and all project info.')) { 
+            if (fountainInput) fountainInput.value = ''; 
+            projectData = createNewProjectObject(); 
+            history.stack = [""]; 
+            history.currentIndex = 0; 
+            history.updateButtons(); 
+            saveProjectData(); 
+            setPlaceholder(); 
+        } 
+    }
+
+    function getFilteredScriptText() { 
+        if (!fountainInput) return '';
+        
+        const category = filterCategorySelect ? filterCategorySelect.value : 'all'; 
+        const value = filterValueInput ? filterValueInput.value.toLowerCase().trim() : ''; 
+        
+        if (category === 'all' || !value) return fountainInput.value; 
+        
+        // Simple filtering - just return the full text for now
+        return fountainInput.value;
+    }
+
+    function handleFilterChange() { 
+        if (filterValueInput && filterCategorySelect) {
+            filterValueInput.style.display = filterCategorySelect.value === 'all' ? 'none' : 'block'; 
+            filterValueInput.value = ''; 
+        }
+        applyFilter(); 
+    }
+
+    function applyFilter() { 
+        if (currentView === 'script') renderScript(); 
+        if (currentView === 'card') renderCardView(); 
+    }
+
+    async function shareSceneCardAsImage(cardElement) { 
+        if(!cardElement) return; 
+        try { 
+            if (typeof html2canvas === 'undefined') {
+                alert('html2canvas library not loaded');
+                return;
+            }
+            
+            const canvas = await html2canvas(cardElement, { 
+                backgroundColor: getComputedStyle(document.body).getPropertyValue('--surface-color') 
+            }); 
+            const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`; 
+            canvas.toBlob((blob) => { 
+                if(navigator.share) { 
+                    const file = new File([blob], fileName, {type: 'image/png'}); 
+                    navigator.share({title: `Scene #${cardElement.dataset.sceneNumber}`, files: [file]}).catch(console.error); 
+                } else { 
+                    const link = document.createElement('a'); 
+                    link.download = fileName; 
+                    link.href = URL.createObjectURL(blob); 
+                    link.click(); 
+                    URL.revokeObjectURL(link.href); 
+                } 
+            }, 'image/png'); 
+        } catch (err) { 
+            console.error("Failed to share scene card:", err); 
+            alert("Could not generate shareable image."); 
+        } 
+    }
+
+    function editSceneFromCard(sceneId) { 
+        if (!fountainInput) return;
+        
+        const sceneCards = document.querySelectorAll('.scene-card');
+        let targetCard = null;
+        sceneCards.forEach(card => {
+            if (card.dataset.sceneId === sceneId) {
+                targetCard = card;
+            }
+        });
+        
+        if (targetCard) {
+            const heading = targetCard.querySelector('.card-header').textContent;
+            const index = fountainInput.value.indexOf(heading.substring(heading.indexOf(' ') + 1));
+            if (index > -1) {
+                switchView('write');
+                fountainInput.focus();
+                fountainInput.setSelectionRange(index, index);
+            }
+        }
+    }
+
+    async function shareScript() { 
+        if (navigator.share && fountainInput) { 
+            try { 
+                await navigator.share({ 
+                    title: projectData.projectInfo.projectName, 
+                    text: fountainInput.value 
+                }); 
+            } catch(err) { 
+                console.error("Share failed", err); 
+            } 
+        } else { 
+            alert('Sharing is not supported on this browser.'); 
+        } 
+    }
+
+    function toggleSceneNumbers() { 
+        showSceneNumbers = !showSceneNumbers; 
+        updateSceneNoIndicator(); 
+        saveProjectData(); 
+        if (scriptView && scriptView.classList.contains('active')) { 
+            renderScript(); 
+        } 
+    }
+
+    function updateSceneNoIndicator() { 
+        const indicator = document.getElementById('scene-no-indicator'); 
+        if (indicator) {
+            if (showSceneNumbers) { 
+                indicator.classList.add('on'); 
+                indicator.classList.remove('off'); 
+            } else { 
+                indicator.classList.add('off'); 
+                indicator.classList.remove('on'); 
+            } 
+        }
+    }
+
+    function toggleAutoSave() { 
+        const indicator = document.getElementById('auto-save-indicator'); 
+        if (autoSaveInterval) { 
+            clearInterval(autoSaveInterval); 
+            autoSaveInterval = null; 
+            if (indicator) {
+                indicator.classList.add('off'); 
+                indicator.classList.remove('on'); 
+            }
+            alert('Auto-save disabled.'); 
+        } else { 
+            autoSaveInterval = setInterval(saveProjectData, 120000); 
+            if (indicator) {
+                indicator.classList.add('on'); 
+                indicator.classList.remove('off'); 
+            }
+            alert('Auto-save enabled (every 2 minutes).'); 
+        } 
+    }
+
+    function updateSceneNavigator() { 
+        if (!sceneList || !fountainInput) return;
+        
+        const lines = fountainInput.value.split('\n');
+        const scenes = [];
+        
+        lines.forEach((line, index) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.')) {
+                scenes.push({
+                    line: index,
+                    text: trimmed
+                });
+            }
+        });
+        
+        sceneList.innerHTML = scenes.map((scene) => 
+            `<li data-line="${scene.line}">${scene.text}</li>`
+        ).join(''); 
+        
+        if (typeof Sortable !== 'undefined') {
+            new Sortable(sceneList, { 
+                animation: 150, 
+                ghostClass: 'dragging', 
+                onEnd: (evt) => { 
+                    console.log('Scene reordered');
+                } 
+            }); 
+        }
+    }
+
+    // Initialize the application
     function initialize() {
-        createModals();
+        console.log('Initializing ToscripT...');
+        
+        // Create modals
+        createModalHTML('project-info-modal', 'Project Info', 
+            `<div class="form-group">
+                <label for="prod-name-input">Production Name / Title</label>
+                <input type="text" id="prod-name-input">
+            </div>
+            <div class="form-group">
+                <label for="director-name-input">Author / Writer</label>
+                <input type="text" id="director-name-input">
+            </div>`, 
+            `<button id="save-project-info-btn" class="main-action-btn">Save</button>`
+        );
+        
+        createModalHTML('about-modal', 'About ToscripT', 
+            `<p style="text-align: center;">Designed by Thosho Tech</p>`, 
+            ''
+        );
+        
+        createModalHTML('info-modal', 'Info & Help', 
+            `<h3>Fountain Syntax</h3>
+            <ul>
+                <li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li>
+                <li><strong>Character:</strong> Any line in all uppercase.</li>
+                <li><strong>Dialogue:</strong> Text following a Character.</li>
+            </ul>
+            <h3>Button Guide</h3>
+            <ul>
+                <li><strong>Aa:</strong> Toggles current line to UPPERCASE.</li>
+                <li><strong>():</strong> Wraps selected text in parentheses.</li>
+            </ul>`, 
+            ''
+        );
+        
+        createModalHTML('title-page-modal', 'Title Page', 
+            `<div class="form-group">
+                <label for="title-input">Title</label>
+                <input type="text" id="title-input">
+            </div>
+            <div class="form-group">
+                <label for="author-input">Author</label>
+                <input type="text" id="author-input">
+            </div>`, 
+            `<button id="save-title-btn" class="main-action-btn">Save</button>`
+        );
+        
         setupEventListeners();
         loadProjectData();
-        if(fountainInput.value === '') {
+        
+        if(fountainInput && fountainInput.value === '') {
             setPlaceholder();
         }
-        history.add(fountainInput.value);
+        
+        history.add(fountainInput ? fountainInput.value : '');
+        console.log('ToscripT initialized successfully!');
     }
-
-    initialize();
+    
+    // Wait a bit for external libraries to load, then initialize
+    setTimeout(initialize, 100);
 });
