@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoSaveInterval = null;
     let showSceneNumbers = true;
     let currentView = 'write';
+    let isKeyboardOpen = false;
 
     // DOM elements
     const fountainInput = document.getElementById('fountain-input');
@@ -38,7 +39,7 @@ That depends on who's asking.
 
 FADE OUT.`;
 
-    // Simple history system
+    // Enhanced history system
     const history = {
         stack: [""],
         currentIndex: 0,
@@ -83,6 +84,50 @@ FADE OUT.`;
         }
     };
 
+    // Mobile keyboard detection and toolbar positioning
+    function setupMobileKeyboard() {
+        let initialViewportHeight = window.innerHeight;
+        
+        function handleViewportChange() {
+            const currentHeight = window.innerHeight;
+            const heightDifference = initialViewportHeight - currentHeight;
+            
+            isKeyboardOpen = heightDifference > 150; // Keyboard is open if height reduced by more than 150px
+            
+            if (mobileToolbar && currentView === 'write') {
+                if (isKeyboardOpen) {
+                    // Position toolbar above keyboard
+                    mobileToolbar.style.position = 'fixed';
+                    mobileToolbar.style.bottom = '0px';
+                    mobileToolbar.style.zIndex = '9999';
+                    mobileToolbar.style.transform = 'translateY(0)';
+                } else {
+                    // Normal position when keyboard is closed
+                    mobileToolbar.style.position = 'fixed';
+                    mobileToolbar.style.bottom = '0px';
+                    mobileToolbar.style.zIndex = '100';
+                    mobileToolbar.style.transform = 'translateY(0)';
+                }
+            }
+        }
+
+        // Use Visual Viewport API if available (modern browsers)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleViewportChange);
+        } else {
+            // Fallback for older browsers
+            window.addEventListener('resize', handleViewportChange);
+        }
+
+        // Also handle orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                initialViewportHeight = window.innerHeight;
+                handleViewportChange();
+            }, 500);
+        });
+    }
+
     // Placeholder functions
     function setPlaceholder() {
         if (fountainInput && fountainInput.value === '') {
@@ -120,9 +165,11 @@ FADE OUT.`;
             fountainInput.value = projectData.projectInfo.scriptContent;
             clearPlaceholder();
         }
+        updateSceneNoIndicator();
+        updateAutoSaveIndicator();
     }
 
-    // View switching
+    // View switching with proper header management
     function switchView(view) {
         console.log('Switching to view:', view);
         currentView = view;
@@ -163,6 +210,54 @@ FADE OUT.`;
                 if (fountainInput) fountainInput.focus();
             }, 100);
         }
+    }
+
+    // Scene number and auto-save indicators
+    function updateSceneNoIndicator() {
+        const indicator = document.getElementById('scene-no-indicator');
+        if (indicator) {
+            if (showSceneNumbers) {
+                indicator.classList.remove('off');
+                indicator.classList.add('on');
+            } else {
+                indicator.classList.remove('on');
+                indicator.classList.add('off');
+            }
+        }
+    }
+
+    function updateAutoSaveIndicator() {
+        const indicator = document.getElementById('auto-save-indicator');
+        if (indicator) {
+            if (autoSaveInterval) {
+                indicator.classList.remove('off');
+                indicator.classList.add('on');
+            } else {
+                indicator.classList.remove('on');
+                indicator.classList.add('off');
+            }
+        }
+    }
+
+    function toggleSceneNumbers() {
+        showSceneNumbers = !showSceneNumbers;
+        updateSceneNoIndicator();
+        saveProjectData();
+        if (currentView === 'script') {
+            renderScript();
+        }
+    }
+
+    function toggleAutoSave() {
+        if (autoSaveInterval) {
+            clearInterval(autoSaveInterval);
+            autoSaveInterval = null;
+            alert('Auto-save disabled');
+        } else {
+            autoSaveInterval = setInterval(saveProjectData, 120000); // Save every 2 minutes
+            alert('Auto-save enabled (every 2 minutes)');
+        }
+        updateAutoSaveIndicator();
     }
 
     // Render functions
@@ -234,7 +329,12 @@ FADE OUT.`;
         if (currentScene) scenes.push(currentScene);
 
         if (scenes.length === 0) {
-            cardContainer.innerHTML = `<p style="text-align: center; color: var(--muted-text-color); padding: 2rem;">No scenes found to display as cards.</p>`;
+            cardContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: var(--muted-text-color);">
+                    <i class="fas fa-film" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                    <p>No scenes found to display as cards.</p>
+                    <p style="font-size: 0.9rem;">Start writing your screenplay to see scene cards here.</p>
+                </div>`;
             return;
         }
 
@@ -243,10 +343,26 @@ FADE OUT.`;
                 <div class="card-header">#${scene.sceneNumber} ${scene.heading}</div>
                 <div class="card-body">${scene.content}</div>
                 <div class="card-actions">
-                    <button class="icon-btn edit-card-btn" title="Edit Scene"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="icon-btn edit-card-btn" title="Edit Scene" data-scene-id="${scene.sceneId}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="${scene.sceneId}">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                 </div>
             </div>`
         ).join('');
+
+        // Add Save All Cards button to card view bottom bar
+        const cardViewBottomBar = cardView.querySelector('.bottom-bar');
+        if (cardViewBottomBar) {
+            cardViewBottomBar.innerHTML = `
+                <button id="show-write-btn-from-card" class="main-action-btn secondary">TO WRITE</button>
+                <button id="save-all-cards-btn" class="main-action-btn" style="margin-left: 1rem;">
+                    <i class="fas fa-download"></i> SAVE ALL CARDS
+                </button>
+            `;
+        }
     }
 
     // Action button handler
@@ -283,7 +399,11 @@ FADE OUT.`;
         }
 
         history.add(fountainInput.value);
-        setTimeout(() => fountainInput.focus(), 10);
+        
+        // Keep focus on mobile
+        setTimeout(() => {
+            if (fountainInput) fountainInput.focus();
+        }, 10);
     }
 
     function cycleText(options) {
@@ -448,6 +568,179 @@ FADE OUT.`;
         reader.readAsText(file, 'UTF-8');
     }
 
+    // Card functions
+    function editSceneFromCard(sceneId) {
+        const text = fountainInput.value || '';
+        const lines = text.split('\n');
+        let targetLineIndex = -1;
+        let sceneCount = 0;
+        const targetSceneNumber = parseInt(sceneId.replace('scene_', ''));
+
+        lines.forEach((line, index) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+                sceneCount++;
+                if (sceneCount === targetSceneNumber) {
+                    targetLineIndex = index;
+                }
+            }
+        });
+
+        if (targetLineIndex >= 0) {
+            switchView('write');
+            setTimeout(() => {
+                if (fountainInput) {
+                    fountainInput.focus();
+                    // Calculate character position
+                    const linesBeforeTarget = lines.slice(0, targetLineIndex);
+                    const charPosition = linesBeforeTarget.join('\n').length + (targetLineIndex > 0 ? 1 : 0);
+                    fountainInput.setSelectionRange(charPosition, charPosition);
+                    fountainInput.scrollTop = (charPosition / fountainInput.value.length) * fountainInput.scrollHeight;
+                }
+            }, 200);
+        }
+    }
+
+    async function shareSceneCard(sceneId) {
+        const cardElement = document.querySelector(`[data-scene-id="${sceneId}"]`);
+        if (!cardElement) return;
+
+        try {
+            if (typeof html2canvas !== 'undefined') {
+                const canvas = await html2canvas(cardElement, {
+                    backgroundColor: '#1f2937',
+                    scale: 2
+                });
+                
+                canvas.toBlob(async (blob) => {
+                    const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`;
+                    
+                    if (navigator.share && navigator.canShare) {
+                        try {
+                            const file = new File([blob], fileName, { type: 'image/png' });
+                            await navigator.share({
+                                title: `Scene #${cardElement.dataset.sceneNumber}`,
+                                files: [file]
+                            });
+                        } catch (err) {
+                            downloadBlob(blob, fileName);
+                        }
+                    } else {
+                        downloadBlob(blob, fileName);
+                    }
+                }, 'image/png');
+            } else {
+                // Fallback: share text content
+                const cardHeader = cardElement.querySelector('.card-header').textContent;
+                const cardBody = cardElement.querySelector('.card-body').textContent;
+                const content = `${cardHeader}\n\n${cardBody}`;
+                
+                if (navigator.share) {
+                    await navigator.share({
+                        title: cardHeader,
+                        text: content
+                    });
+                } else {
+                    await navigator.clipboard.writeText(content);
+                    alert('Scene copied to clipboard!');
+                }
+            }
+        } catch (err) {
+            console.error('Share failed:', err);
+            alert('Unable to share scene. Please try again.');
+        }
+    }
+
+    function downloadBlob(blob, fileName) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async function saveAllCardsAsZip() {
+        if (typeof JSZip === 'undefined') {
+            // Fallback: save individual cards as text files
+            alert('ZIP library not available. Saving individual scene files...');
+            
+            const text = fountainInput.value || '';
+            const lines = text.split('\n');
+            const scenes = [];
+            let currentScene = null;
+            let sceneNumber = 0;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+                    if (currentScene) scenes.push(currentScene);
+                    sceneNumber++;
+                    currentScene = {
+                        sceneNumber: sceneNumber,
+                        heading: trimmed,
+                        content: ''
+                    };
+                } else if (currentScene && trimmed) {
+                    currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
+                }
+            });
+            if (currentScene) scenes.push(currentScene);
+
+            scenes.forEach(scene => {
+                const sceneText = `${scene.heading}\n\n${scene.content}`;
+                const blob = new Blob([sceneText], { type: 'text/plain;charset=utf-8' });
+                downloadBlob(blob, `Scene_${scene.sceneNumber}.txt`);
+            });
+            return;
+        }
+
+        try {
+            // Create ZIP file with scene cards
+            const zip = new JSZip();
+            const text = fountainInput.value || '';
+            const lines = text.split('\n');
+            const scenes = [];
+            let currentScene = null;
+            let sceneNumber = 0;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+                    if (currentScene) scenes.push(currentScene);
+                    sceneNumber++;
+                    currentScene = {
+                        sceneNumber: sceneNumber,
+                        heading: trimmed,
+                        content: ''
+                    };
+                } else if (currentScene && trimmed) {
+                    currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
+                }
+            });
+            if (currentScene) scenes.push(currentScene);
+
+            // Add each scene to ZIP
+            scenes.forEach(scene => {
+                const sceneText = `${scene.heading}\n\n${scene.content}`;
+                zip.file(`Scene_${scene.sceneNumber}.txt`, sceneText);
+            });
+
+            // Add project info
+            const projectInfo = `Project: ${projectData.projectInfo.projectName}\nAuthor: ${projectData.projectInfo.prodName}\nTotal Scenes: ${scenes.length}\nGenerated: ${new Date().toLocaleString()}`;
+            zip.file('Project_Info.txt', projectInfo);
+
+            // Generate ZIP and download
+            const content = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(content, `${projectData.projectInfo.projectName}_Scenes.zip`);
+            
+            alert(`Successfully saved ${scenes.length} scenes as a ZIP file!`);
+        } catch (error) {
+            console.error('ZIP creation failed:', error);
+            alert('Error creating ZIP file. Please try again.');
+        }
+    }
+
     // Modal functions
     function createModal(id, title, body, footer = '') {
         let modal = document.getElementById(id);
@@ -490,13 +783,67 @@ FADE OUT.`;
         if (modal) modal.classList.remove('open');
     }
 
+    function openTitlePageModal() {
+        const modal = document.getElementById('title-page-modal');
+        if (modal) {
+            modal.classList.add('open');
+            const titleInput = document.getElementById('title-input');
+            const authorInput = document.getElementById('author-input');
+            if (titleInput) titleInput.value = projectData.projectInfo.projectName || '';
+            if (authorInput) authorInput.value = projectData.projectInfo.prodName || '';
+        }
+    }
+
+    function handleSaveTitlePage() {
+        const titleInput = document.getElementById('title-input');
+        const authorInput = document.getElementById('author-input');
+
+        if (titleInput) projectData.projectInfo.projectName = titleInput.value || "Untitled";
+        if (authorInput) projectData.projectInfo.prodName = authorInput.value || "Author";
+        saveProjectData();
+
+        const modal = document.getElementById('title-page-modal');
+        if (modal) modal.classList.remove('open');
+    }
+
+    // Scene navigator functions
+    function updateSceneNavigator() {
+        const sceneList = document.getElementById('scene-list');
+        if (!sceneList || !fountainInput) return;
+
+        const lines = fountainInput.value.split('\n');
+        const scenes = [];
+
+        lines.forEach((line, index) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+                scenes.push({
+                    line: index,
+                    text: trimmed
+                });
+            }
+        });
+
+        sceneList.innerHTML = scenes.map((scene) =>
+            `<li data-line="${scene.line}">${scene.text}</li>`
+        ).join('');
+    }
+
     // Setup all event listeners
     function setupEventListeners() {
-        console.log('Setting up event listeners...');
+        console.log('Setting up comprehensive event listeners...');
 
         // Fountain input
         if (fountainInput) {
-            fountainInput.addEventListener('focus', clearPlaceholder);
+            fountainInput.addEventListener('focus', () => {
+                clearPlaceholder();
+                // Prevent keyboard from closing mobile toolbar
+                if (mobileToolbar && window.innerWidth <= 768 && currentView === 'write') {
+                    setTimeout(() => {
+                        if (mobileToolbar) mobileToolbar.style.display = 'block';
+                    }, 300);
+                }
+            });
             fountainInput.addEventListener('blur', setPlaceholder);
             fountainInput.addEventListener('input', () => {
                 history.add(fountainInput.value);
@@ -527,21 +874,17 @@ FADE OUT.`;
             });
         }
 
-        const showWriteBtnCard = document.getElementById('show-write-btn-from-card');
-        if (showWriteBtnCard) {
-            showWriteBtnCard.addEventListener('click', () => switchView('write'));
-        }
-
         const cardViewBtn = document.getElementById('card-view-btn');
         if (cardViewBtn) {
             cardViewBtn.addEventListener('click', () => switchView('card'));
         }
 
-        // Hamburger menus
+        // Hamburger menus (LEFT side for regular menu)
         const hamburgerBtn = document.getElementById('hamburger-btn');
         if (hamburgerBtn) {
             hamburgerBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
+                console.log('Hamburger clicked - toggling menu panel');
                 if (menuPanel) menuPanel.classList.toggle('open');
             });
         }
@@ -551,6 +894,33 @@ FADE OUT.`;
             hamburgerBtnScript.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (menuPanel) menuPanel.classList.toggle('open');
+            });
+        }
+
+        // Scene navigator (RIGHT side button)
+        const sceneNavigatorBtn = document.getElementById('scene-navigator-btn');
+        if (sceneNavigatorBtn) {
+            sceneNavigatorBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                console.log('Scene navigator clicked');
+                updateSceneNavigator();
+                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open');
+            });
+        }
+
+        const sceneNavigatorBtnScript = document.getElementById('scene-navigator-btn-script');
+        if (sceneNavigatorBtnScript) {
+            sceneNavigatorBtnScript.addEventListener('click', (e) => {
+                e.stopPropagation();
+                updateSceneNavigator();
+                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open');
+            });
+        }
+
+        const closeNavigatorBtn = document.getElementById('close-navigator-btn');
+        if (closeNavigatorBtn) {
+            closeNavigatorBtn.addEventListener('click', () => {
+                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open');
             });
         }
 
@@ -577,6 +947,16 @@ FADE OUT.`;
             });
         }
 
+        // Save menu toggle
+        const saveMenuBtn = document.getElementById('save-menu-btn');
+        if (saveMenuBtn) {
+            saveMenuBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const dropdown = saveMenuBtn.parentElement;
+                if (dropdown) dropdown.classList.toggle('open');
+            });
+        }
+
         const savePdfBtn = document.getElementById('save-pdf-btn');
         if (savePdfBtn) {
             savePdfBtn.addEventListener('click', saveAsPdfWithUnicode);
@@ -592,6 +972,11 @@ FADE OUT.`;
             projectInfoBtn.addEventListener('click', openProjectInfoModal);
         }
 
+        const titlePageBtn = document.getElementById('title-page-btn');
+        if (titlePageBtn) {
+            titlePageBtn.addEventListener('click', openTitlePageModal);
+        }
+
         const infoBtn = document.getElementById('info-btn');
         if (infoBtn) {
             infoBtn.addEventListener('click', () => {
@@ -605,6 +990,30 @@ FADE OUT.`;
             aboutBtn.addEventListener('click', () => {
                 const modal = document.getElementById('about-modal');
                 if (modal) modal.classList.add('open');
+            });
+        }
+
+        // Toggle buttons
+        const sceneNoBtn = document.getElementById('scene-no-btn');
+        if (sceneNoBtn) {
+            sceneNoBtn.addEventListener('click', toggleSceneNumbers);
+        }
+
+        const autoSaveBtn = document.getElementById('auto-save-btn');
+        if (autoSaveBtn) {
+            autoSaveBtn.addEventListener('click', toggleAutoSave);
+        }
+
+        // Fullscreen button
+        const fullscreenBtn = document.getElementById('fullscreen-btn-main');
+        if (fullscreenBtn) {
+            fullscreenBtn.addEventListener('click', () => {
+                document.body.classList.toggle('fullscreen-active');
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(console.error);
+                } else {
+                    document.exitFullscreen().catch(console.error);
+                }
             });
         }
 
@@ -627,11 +1036,19 @@ FADE OUT.`;
             btn.addEventListener('click', () => history.redo());
         });
 
-        // Close panels when clicking outside
+        // Global click handler for dynamic elements
         document.addEventListener('click', (e) => {
+            // Close menu panel when clicking outside
             if (menuPanel && menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && 
                 !e.target.closest('#hamburger-btn') && !e.target.closest('#hamburger-btn-script')) {
                 menuPanel.classList.remove('open');
+            }
+
+            // Close scene navigator when clicking outside
+            if (sceneNavigatorPanel && sceneNavigatorPanel.classList.contains('open') && 
+                !sceneNavigatorPanel.contains(e.target) && !e.target.closest('#scene-navigator-btn') && 
+                !e.target.closest('#scene-navigator-btn-script')) {
+                sceneNavigatorPanel.classList.remove('open');
             }
 
             // Modal close
@@ -640,11 +1057,34 @@ FADE OUT.`;
                 if (modal) modal.classList.remove('open');
             }
 
-            // Save buttons
+            // Dynamic save buttons
             if (e.target.id === 'save-project-info-btn') handleSaveProjectInfo();
+            if (e.target.id === 'save-title-btn') handleSaveTitlePage();
+
+            // Card view buttons (dynamically created)
+            if (e.target.id === 'show-write-btn-from-card') {
+                switchView('write');
+            }
+            if (e.target.id === 'save-all-cards-btn') {
+                saveAllCardsAsZip();
+            }
+
+            // Edit card button
+            if (e.target.closest('.edit-card-btn')) {
+                const btn = e.target.closest('.edit-card-btn');
+                const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
+                if (sceneId) editSceneFromCard(sceneId);
+            }
+
+            // Share card button
+            if (e.target.closest('.share-card-btn')) {
+                const btn = e.target.closest('.share-card-btn');
+                const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
+                if (sceneId) shareSceneCard(sceneId);
+            }
         });
 
-        console.log('Event listeners setup complete');
+        console.log('All event listeners setup complete');
     }
 
     // Initialize
@@ -664,12 +1104,27 @@ FADE OUT.`;
             `<button id="save-project-info-btn" class="main-action-btn">Save</button>`
         );
 
+        createModal('title-page-modal', 'Title Page',
+            `<div class="form-group">
+                <label for="title-input">Title</label>
+                <input type="text" id="title-input" placeholder="Enter screenplay title">
+            </div>
+            <div class="form-group">
+                <label for="author-input">Author</label>
+                <input type="text" id="author-input" placeholder="Enter author name">
+            </div>`,
+            `<button id="save-title-btn" class="main-action-btn">Save</button>`
+        );
+
         createModal('about-modal', 'About ToscripT',
             `<p style="text-align: center; margin: 2rem 0;">
                 <strong style="color: var(--primary-color);">ToscripT</strong><br>
                 Professional Screenwriting Tool<br><br>
                 <span style="color: var(--muted-text-color);">Designed by</span><br>
-                <strong>Thosho Tech</strong>
+                <strong>Thosho Tech</strong><br><br>
+                <span style="font-size: 0.9rem; color: var(--muted-text-color);">
+                    Empowering scriptwriters worldwide with professional tools
+                </span>
             </p>`
         );
 
@@ -683,7 +1138,7 @@ FADE OUT.`;
                     <li><strong>Parenthetical:</strong> Text in (parentheses).</li>
                     <li><strong>Transition:</strong> CUT TO:, FADE IN:, etc.</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">Button Guide</h3>
+                <h3 style="color: var(--primary-color);">Mobile Buttons</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>I/E:</strong> Cycles INT./EXT./INT./EXT.</li>
                     <li><strong>D/N:</strong> Cycles DAY/NIGHT/MORNING/EVENING.</li>
@@ -691,10 +1146,17 @@ FADE OUT.`;
                     <li><strong>():</strong> Wraps selected text in parentheses.</li>
                     <li><strong>TO:</strong> Cycles transition types.</li>
                 </ul>
+                <h3 style="color: var(--primary-color);">Card View Features</h3>
+                <ul style="padding-left: 1.2rem;">
+                    <li><strong>Edit:</strong> Jump to scene in editor</li>
+                    <li><strong>Share:</strong> Share individual scene</li>
+                    <li><strong>Save All Cards:</strong> Download all scenes as ZIP</li>
+                </ul>
             </div>`
         );
 
         setupEventListeners();
+        setupMobileKeyboard();
         loadProjectData();
 
         if (fountainInput) {
@@ -721,7 +1183,17 @@ FADE OUT.`;
         updateMobileToolbar();
 
         history.add(fountainInput ? fountainInput.value : '');
-        console.log('ToscripT initialized successfully!');
+        
+        // Add JSZip for ZIP functionality
+        if (typeof JSZip === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = () => console.log('JSZip loaded successfully');
+            script.onerror = () => console.warn('JSZip failed to load - ZIP functionality will use fallback');
+            document.head.appendChild(script);
+        }
+
+        console.log('🎬 ToscripT initialized successfully! Ready to help scriptwriters worldwide! 🌟');
     }
 
     // Start the app
