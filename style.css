@@ -7,11 +7,16 @@
     --border-color: #374151; 
     --danger-color: #ef4444; 
     --success-color: #22c55e; 
-    --mobile-toolbar-height: 70px;
+    --keyboard-toolbar-height: 50px;
 }
 
 * {
     box-sizing: border-box;
+}
+
+html {
+    height: 100%;
+    height: 100dvh;
 }
 
 body { 
@@ -21,15 +26,19 @@ body {
     display: flex; 
     flex-direction: column; 
     height: 100vh; 
-    height: 100dvh; /* Dynamic viewport height for mobile */
+    height: 100dvh;
     overflow: hidden; 
     margin: 0; 
     padding: 0;
     position: relative;
+    /* Enable safe area for iOS */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
 }
 
 body.fullscreen-active #main-header,
-body.fullscreen-active #script-header { 
+body.fullscreen-active #script-header,
+body.fullscreen-active #card-header { 
     display: none !important; 
 }
 
@@ -51,13 +60,9 @@ body.fullscreen-active .main-content {
     z-index: 30; 
 }
 
-.write-mode-header {
-    display: flex;
-}
-
-.script-mode-header {
-    display: none;
-}
+.write-mode-header { display: flex; }
+.script-mode-header { display: none; }
+.card-mode-header { display: none; }
 
 .page-header .header-left, 
 .page-header .header-right { 
@@ -85,6 +90,8 @@ body.fullscreen-active .main-content {
     border-radius: 50%; 
     line-height: 1; 
     touch-action: manipulation;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .icon-btn:hover, 
@@ -94,10 +101,10 @@ body.fullscreen-active .main-content {
 }
 
 .main-action-btn { 
-    background-color: var(--primary-color); 
+    background: linear-gradient(135deg, var(--primary-color), #2563eb);
     color: white; 
     font-weight: bold; 
-    padding: 0.75rem 1rem; 
+    padding: 0.75rem 1.5rem; 
     border-radius: 8px; 
     font-size: 1.1rem; 
     border: none; 
@@ -105,31 +112,39 @@ body.fullscreen-active .main-content {
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
     touch-action: manipulation;
+    white-space: nowrap;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .main-action-btn:hover,
 .main-action-btn:active {
-    background-color: #2563eb;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 
 .main-action-btn.header-btn { 
-    padding: 0.6rem 1.5rem; 
-    font-size: 1rem; 
+    padding: 0.7rem 2rem; 
+    font-size: 1.1rem; 
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    min-width: 140px;
+    height: 44px;
 }
 
 .wide-btn {
-    min-width: 120px;
     background: linear-gradient(135deg, var(--primary-color), #2563eb);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 .main-action-btn.secondary { 
     background-color: var(--surface-color); 
     border: 1px solid var(--border-color); 
+    background: none;
 }
 
 .main-content { 
@@ -183,6 +198,7 @@ body.fullscreen-active .main-content {
     border-radius: 6px; 
     margin-bottom: 0.25rem; 
     touch-action: manipulation;
+    min-height: 44px;
 }
 
 .side-menu nav a:hover,
@@ -291,7 +307,7 @@ body.fullscreen-active .main-content {
     color: var(--text-color); 
     margin-top: 0.5rem; 
     box-sizing: border-box;
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
 }
 
 .panel-subtext { 
@@ -316,6 +332,7 @@ body.fullscreen-active .main-content {
     border: 1px solid transparent; 
     background-color: var(--background-color); 
     touch-action: manipulation;
+    min-height: 44px;
 }
 
 #scene-list li:hover,
@@ -348,6 +365,8 @@ body.fullscreen-active .main-content {
     font-weight: bold; 
     transition: all 0.2s ease;
     touch-action: manipulation;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .toolbar-btn:hover, 
@@ -386,6 +405,9 @@ body.fullscreen-active .main-content {
     font-size: 16px; 
     line-height: 1.6; 
     -webkit-font-smoothing: antialiased;
+    /* Enhanced mobile support */
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
 }
 
 #fountain-input:focus { 
@@ -410,58 +432,64 @@ body.fullscreen-active .main-content {
     flex-shrink: 0; 
 }
 
-/* Mobile Fixed Toolbar - Improved positioning */
-.mobile-fixed-toolbar {
+/* Enhanced Mobile Keyboard Toolbar */
+.mobile-keyboard-toolbar {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: linear-gradient(135deg, var(--surface-color), var(--background-color));
     border-top: 2px solid var(--primary-color);
-    z-index: 100;
-    padding: 0.75rem 0.5rem;
-    backdrop-filter: blur(10px);
+    z-index: 9999;
+    padding: 8px 12px;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
     display: none;
-    height: var(--mobile-toolbar-height);
-    /* Ensure it stays above keyboard */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    /* iOS safe area */
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    /* Ensure it appears above keyboard on iOS */
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
 }
 
-.mobile-action-buttons {
+.mobile-keyboard-toolbar.show {
+    display: block;
+}
+
+.mobile-action-row {
     display: flex;
     justify-content: space-around;
     align-items: center;
-    gap: 0.5rem;
-    max-width: 500px;
-    margin: 0 auto;
-    height: 100%;
+    gap: 8px;
+    max-width: 100%;
 }
 
 .mobile-action-btn {
     background: linear-gradient(135deg, var(--primary-color), #2563eb);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 0.8rem 0.6rem;
-    border-radius: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
-    font-size: 0.85rem;
+    font-size: 14px;
     flex: 1;
-    max-width: 65px;
-    min-height: 44px; /* iOS minimum touch target */
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    max-width: 60px;
+    min-height: 44px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.mobile-action-btn:hover,
 .mobile-action-btn:active {
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    transform: translateY(-1px) scale(0.95);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
 }
 
 .preview-area { 
@@ -481,46 +509,83 @@ body.fullscreen-active .main-content {
     border-radius: 8px; 
     max-width: 8.5in; 
     margin: 0 auto; 
+    line-height: 1.5;
 }
 
+/* Industry Standard Screenplay Formatting */
 .title-page { 
     text-align: center; 
-    margin-bottom: 2rem; 
+    margin-bottom: 4rem;
+    page-break-after: always;
 } 
 
+.title-page h1 {
+    font-size: 24px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.title-page .author {
+    font-size: 16px;
+    margin-bottom: 0.5rem;
+}
+
+/* Scene Heading - 1.5" from left */
 .scene-heading { 
     font-weight: bold; 
     text-transform: uppercase; 
-    margin-top: 1.5rem; 
-    margin-bottom: 1rem; 
+    margin: 2rem 0 1rem 0;
+    font-size: 12px;
+    line-height: 1.5;
 } 
 
+/* Action - full width */
 .action { 
-    margin-bottom: 1rem; 
+    margin-bottom: 1rem;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 6in;
 } 
 
+/* Character - 3.7" from left (2.2" from margin) */
 .character { 
     text-transform: uppercase; 
-    margin-left: 37%; 
+    margin-left: 2.2in;
     font-weight: bold; 
-    margin-top: 1.5rem; 
+    margin-top: 1.5rem;
+    margin-bottom: 0;
+    font-size: 12px;
 } 
 
+/* Dialogue - 2.5" from left (1" from margin), 3.5" wide */
 .dialogue { 
-    margin-left: 25%; 
-    margin-right: 15%; 
+    margin-left: 1in;
+    margin-right: 1.5in;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 3.5in;
 } 
 
+/* Parenthetical - 3.1" from left (1.6" from margin) */
 .parenthetical { 
-    margin-left: 30%; 
-    margin-right: 25%; 
+    margin-left: 1.6in;
+    margin-right: 2in;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
 } 
 
+/* Transition - right aligned, 6" from left */
 .transition { 
     text-align: right; 
     text-transform: uppercase; 
     font-weight: bold; 
-    margin-top: 1.5rem; 
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 12px;
+    margin-right: 1in;
 }
 
 #card-view { 
@@ -541,6 +606,11 @@ body.fullscreen-active .main-content {
     padding: 1rem; 
     display: flex; 
     flex-direction: column; 
+    position: relative;
+}
+
+.scene-card-content {
+    /* This wrapper excludes buttons from image export */
 }
 
 .card-header { 
@@ -567,6 +637,25 @@ body.fullscreen-active .main-content {
     display: flex; 
     justify-content: flex-end; 
     gap: 0.5rem; 
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: rgba(31, 41, 55, 0.9);
+    padding: 0.25rem;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.scene-card:hover .card-actions {
+    opacity: 1;
+}
+
+.card-actions .icon-btn {
+    font-size: 0.9rem;
+    padding: 0.25rem;
+    min-width: 32px;
+    min-height: 32px;
 }
 
 /* Modal Styles */
@@ -638,7 +727,7 @@ body.fullscreen-active .main-content {
     border: 1px solid var(--border-color); 
     border-radius: 8px; 
     color: var(--text-color); 
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
     -webkit-font-smoothing: antialiased;
 }
 
@@ -659,51 +748,49 @@ body.fullscreen-active .main-content {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-    body {
-        height: 100vh; /* Fallback */
-        height: 100dvh; /* Dynamic viewport height */
+    html, body {
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
     }
     
     #desktop-side-toolbar { 
         display: none; 
     }
     
-    .mobile-fixed-toolbar {
+    .mobile-keyboard-toolbar {
         display: block;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
     }
     
-    /* Show mobile toolbar only in write view */
-    .view:not(#write-view) ~ .mobile-fixed-toolbar,
-    #write-view:not(.active) ~ .mobile-fixed-toolbar {
-        display: none !important;
-    }
-    
-    /* Adjust main content to account for mobile toolbar in write mode */
-    #write-view.active ~ .mobile-fixed-toolbar {
-        display: block;
-    }
-    
-    #write-view.active .main-content {
-        padding-bottom: var(--mobile-toolbar-height);
-    }
-    
-    #fountain-input {
-        padding-bottom: 2rem;
-        /* Prevent zoom on focus */
-        font-size: 16px;
-        -webkit-text-size-adjust: 100%;
+    /* Show toolbar when keyboard might be open */
+    body.keyboard-open .mobile-keyboard-toolbar,
+    #fountain-input:focus ~ .mobile-keyboard-toolbar,
+    .mobile-keyboard-toolbar.show {
+        opacity: 1;
+        visibility: visible;
     }
     
     .editor-area, .preview-area { 
         padding: 0.25rem; 
     }
     
-    .page-header h1 { 
-        display: none; 
+    #fountain-input {
+        padding: 1rem;
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
     }
     
     .page-header .header-center { 
         flex-grow: 1; 
+    }
+    
+    .main-action-btn.header-btn {
+        min-width: 120px;
+        padding: 0.6rem 1.5rem;
+        font-size: 1rem;
     }
     
     /* Mobile Modal Styles */
@@ -735,23 +822,25 @@ body.fullscreen-active .main-content {
         max-width: 90vw;
     }
     
-    /* Adjust viewport for mobile browsers */
-    .main-content {
-        height: calc(100vh - 55px);
-        height: calc(100dvh - 55px);
+    .scene-card {
+        margin-bottom: 1rem;
+    }
+    
+    .card-actions {
+        opacity: 1;
+        position: static;
+        background: none;
+        margin-top: 0.5rem;
+        padding: 0;
     }
 }
 
-/* Prevent iOS Safari bounce */
-@media screen and (max-width: 768px) {
-    body {
-        position: fixed;
-        width: 100%;
-    }
-    
-    .main-content {
-        overflow: hidden;
-        touch-action: pan-y;
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .mobile-keyboard-toolbar {
+        /* Ensure it appears above iOS keyboard */
+        bottom: env(keyboard-inset-height, 0px);
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
     }
 }
 
