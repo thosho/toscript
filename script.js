@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🎬 ToscripT Professional - Complete with Card Image Saving");
+    console.log("🎬 ToscripT Professional - Complete with Side Buttons & Image Export");
     
     // Global variables
     let projectData = { 
@@ -442,7 +442,7 @@ FADE OUT.`;
         return scenes;
     }
 
-    // FIXED: Card View Rendering with Image-Ready Format
+    // FIXED: Card View with Side Buttons
     function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer || !fountainInput) return;
@@ -479,13 +479,13 @@ FADE OUT.`;
             return;
         }
 
-        // Create cards with image-ready format
+        // FIXED: Cards with side buttons like in your image
         cardContainer.innerHTML = scenes.map(scene =>
             `<div class="scene-card card-for-export" data-scene-id="${scene.sceneId}" data-scene-number="${scene.sceneNumber}">
                 <div class="scene-card-content">
                     <div class="card-header">
                         <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">${scene.heading}</div>
-                        <input class="card-scene-number" type="text" value="#${scene.sceneNumber}" maxlength="5" data-scene-id="${scene.sceneId}" />
+                        <input class="card-scene-number" type="text" value="#${scene.sceneNumber}" maxlength="4" data-scene-id="${scene.sceneId}" />
                     </div>
                     <div class="card-body">
                         <textarea class="card-description" placeholder="Enter detailed scene description...
@@ -523,7 +523,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
             });
         }
 
-        console.log(`🎞️ Rendered ${scenes.length} cards ready for image export`);
+        console.log(`🎞️ Rendered ${scenes.length} cards with side buttons`);
     }
 
     // Setup + Button
@@ -563,7 +563,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                 <div class="scene-card-content">
                     <div class="card-header">
                         <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">INT. NEW LOCATION - DAY</div>
-                        <input class="card-scene-number" type="text" value="#${newSceneNumber}" maxlength="5" data-scene-id="scene_${newSceneNumber}" />
+                        <input class="card-scene-number" type="text" value="#${newSceneNumber}" maxlength="4" data-scene-id="scene_${newSceneNumber}" />
                     </div>
                     <div class="card-body">
                         <textarea class="card-description" placeholder="Enter detailed scene description..." data-scene-id="scene_${newSceneNumber}"></textarea>
@@ -800,7 +800,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
         }
     }
 
-    // Share single scene card
+    // FIXED: Share Scene Card with Clean White Background for Print
     async function shareSceneCard(sceneId) {
         const cardElement = document.querySelector(`[data-scene-id="${sceneId}"]`);
         if (!cardElement) {
@@ -809,37 +809,44 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
         }
 
         try {
+            // Hide action buttons
             const actionsDiv = cardElement.querySelector('.card-actions');
-            actionsDiv.style.opacity = '0';
-            actionsDiv.style.visibility = 'hidden';
+            const originalDisplay = actionsDiv.style.display;
+            actionsDiv.style.display = 'none';
 
             let dataUrl;
-            if (typeof htmlToImage !== 'undefined') {
-                dataUrl = await htmlToImage.toPng(cardElement.querySelector('.scene-card-content'), {
-                    backgroundColor: 'white',
-                    pixelRatio: 3,
-                    width: 380,
-                    height: 320
-                });
-            } else if (typeof html2canvas !== 'undefined') {
+            
+            // Use html2canvas or htmlToImage
+            if (typeof html2canvas !== 'undefined') {
                 const canvas = await html2canvas(cardElement.querySelector('.scene-card-content'), {
                     backgroundColor: 'white',
                     scale: 3,
-                    width: 380,
+                    width: 400,
                     height: 320,
                     useCORS: true,
                     allowTaint: true
                 });
                 dataUrl = canvas.toDataURL('image/png', 1.0);
+            } else if (typeof htmlToImage !== 'undefined') {
+                dataUrl = await htmlToImage.toPng(cardElement.querySelector('.scene-card-content'), {
+                    backgroundColor: 'white',
+                    pixelRatio: 3,
+                    width: 400,
+                    height: 320
+                });
+            } else {
+                alert('Image export library not available.');
+                return;
             }
             
-            actionsDiv.style.opacity = '';
-            actionsDiv.style.visibility = '';
+            // Restore action buttons
+            actionsDiv.style.display = originalDisplay;
             
             if (dataUrl) {
                 const sceneNumber = cardElement.querySelector('.card-scene-number').value.replace('#', '');
                 const sceneTitle = cardElement.querySelector('.card-scene-title').textContent.trim();
-                const fileName = `Scene_${sceneNumber}_${sceneTitle.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+                const cleanTitle = sceneTitle.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = `Scene_${sceneNumber}_${cleanTitle}.png`;
                 
                 if (navigator.share) {
                     try {
@@ -872,7 +879,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
         document.body.removeChild(a);
     }
 
-    // FIXED: New function - Save All Cards as Images (replaces ZIP functionality)
+    // FIXED: Save All Cards as Individual Images (replaces ZIP)
     async function saveAllCardsAsImages() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer) {
@@ -895,40 +902,34 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                 try {
                     // Hide action buttons for clean export
                     const actionsDiv = card.querySelector('.card-actions');
-                    if (actionsDiv) {
-                        actionsDiv.style.opacity = '0';
-                        actionsDiv.style.visibility = 'hidden';
-                    }
+                    const originalDisplay = actionsDiv ? actionsDiv.style.display : '';
+                    if (actionsDiv) actionsDiv.style.display = 'none';
 
                     let dataUrl;
                     
-                    // Try htmlToImage first (higher quality)
-                    if (typeof htmlToImage !== 'undefined') {
-                        dataUrl = await htmlToImage.toPng(card.querySelector('.scene-card-content'), {
-                            backgroundColor: 'white',
-                            pixelRatio: 3,
-                            width: 380,
-                            height: 320,
-                            quality: 0.95
-                        });
-                    } else if (typeof html2canvas !== 'undefined') {
-                        // Fallback to html2canvas
+                    // Use available image library
+                    if (typeof html2canvas !== 'undefined') {
                         const canvas = await html2canvas(card.querySelector('.scene-card-content'), {
                             backgroundColor: 'white',
                             scale: 3,
-                            width: 380,
+                            width: 400,
                             height: 320,
                             useCORS: true,
                             allowTaint: true
                         });
                         dataUrl = canvas.toDataURL('image/png', 0.95);
+                    } else if (typeof htmlToImage !== 'undefined') {
+                        dataUrl = await htmlToImage.toPng(card.querySelector('.scene-card-content'), {
+                            backgroundColor: 'white',
+                            pixelRatio: 3,
+                            width: 400,
+                            height: 320,
+                            quality: 0.95
+                        });
                     }
                     
                     // Restore action buttons
-                    if (actionsDiv) {
-                        actionsDiv.style.opacity = '';
-                        actionsDiv.style.visibility = '';
-                    }
+                    if (actionsDiv) actionsDiv.style.display = originalDisplay;
 
                     if (dataUrl) {
                         const sceneNumber = card.dataset.sceneNumber || (index + 1);
@@ -937,17 +938,12 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                         const fileName = `Scene_${sceneNumber}_${cleanTitle}.png`;
                         
                         // Download the image
-                        const a = document.createElement('a');
-                        a.href = dataUrl;
-                        a.download = fileName;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
+                        downloadBlob(dataUrl, fileName);
                         
                         successCount++;
                         
-                        // Small delay between downloads to prevent overwhelming the browser
-                        await new Promise(resolve => setTimeout(resolve, 200));
+                        // Small delay between downloads
+                        await new Promise(resolve => setTimeout(resolve, 300));
                     }
                     
                 } catch (cardError) {
@@ -956,8 +952,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
             }
             
             if (successCount > 0) {
-                alert(`🎉 Successfully saved ${successCount} scene cards as PNG images!\n\nFiles saved to your Downloads folder.`);
-                console.log(`✅ Successfully saved ${successCount}/${cards.length} cards as images`);
+                alert(`🎉 Successfully saved ${successCount} scene cards as PNG images!\n\nFiles saved to your Downloads folder with white backgrounds and black text for printing.`);
             } else {
                 alert('❌ Failed to save any cards. Please try again.');
             }
@@ -1127,8 +1122,6 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                         fountainInput.value = fountainText.trim();
                         clearPlaceholder();
                     }
-                    
-                    console.log('📂 .filmproj file loaded successfully');
                 } catch (err) {
                     alert('Invalid .filmproj file format');
                 }
@@ -1393,7 +1386,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
 
     // Initialize Application
     function initialize() {
-        console.log('🎬 Initializing ToscripT Professional with Image Saving');
+        console.log('🎬 Initializing ToscripT Professional with Side Buttons & Image Export');
 
         createModal('project-info-modal', 'Project Info',
             `<div class="form-group">
@@ -1411,40 +1404,37 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
             `<div style="text-align: center; margin: 2rem 0;">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🎬</div>
                 <h3 style="color: var(--primary-color); margin: 0;">ToscripT Professional</h3>
-                <p style="color: var(--muted-text-color); margin: 0.5rem 0;">Professional Screenwriting with Image Export</p>
+                <p style="color: var(--muted-text-color); margin: 0.5rem 0;">Professional Screenwriting with Side Buttons</p>
                 <hr style="border-color: var(--border-color); margin: 2rem 0;">
                 <p><strong>Designed by Thosho Tech</strong></p>
                 <p style="font-size: 0.9rem; color: var(--muted-text-color);">
-                    Professional screenwriting with high-quality card image export functionality.
+                    Professional screenwriting with side-positioned buttons and high-quality image export.
                 </p>
             </div>`
         );
 
         createModal('info-modal', 'Info & Help',
             `<div style="line-height: 1.6;">
-                <h3 style="color: var(--primary-color); margin-top: 0;">🖼️ Image Export Feature</h3>
+                <h3 style="color: var(--primary-color); margin-top: 0;">🎞️ Side Button Cards</h3>
                 <ul style="padding-left: 1.2rem;">
-                    <li><strong>High Quality:</strong> Cards saved as PNG images at 3x resolution</li>
-                    <li><strong>Clean Export:</strong> Action buttons hidden during image export</li>
-                    <li><strong>Professional Format:</strong> Perfect 380x320 dimensions for printing</li>
-                    <li><strong>Batch Save:</strong> Save all cards at once with sequential naming</li>
-                    <li><strong>Watermark Included:</strong> @TO SCRIPT watermark on each card</li>
+                    <li><strong>Side Buttons:</strong> Edit and share buttons positioned vertically on the right</li>
+                    <li><strong>Small Scene Number:</strong> 4-digit maximum width field for scene numbers</li>
+                    <li><strong>Print Ready:</strong> White background and black text for printing</li>
+                    <li><strong>Image Export:</strong> High-quality PNG images with proper formatting</li>
+                    <li><strong>Clean Export:</strong> Action buttons hidden during image generation</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">📱 Card Features</h3>
+                <h3 style="color: var(--primary-color);">📱 Mobile Features</h3>
                 <ul style="padding-left: 1.2rem;">
-                    <li><strong>HUGE Description Area:</strong> Maximum space for scene content</li>
-                    <li><strong>Left-Side Buttons:</strong> Edit and share buttons slide in from left</li>
-                    <li><strong>Editable Numbers:</strong> Click scene numbers to edit</li>
-                    <li><strong>Drag & Drop:</strong> Reorder scenes with smooth animations</li>
-                    <li><strong>+ Button:</strong> Add new scenes easily in card view</li>
-                    <li><strong>Bidirectional Sync:</strong> Changes sync between cards and editor</li>
+                    <li><strong>Keyboard Toolbar:</strong> I/E D/N Aa () TO: buttons above keyboard</li>
+                    <li><strong>Touch Optimized:</strong> Perfect touch targets and gestures</li>
+                    <li><strong>Responsive Design:</strong> Adapts beautifully to all screen sizes</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">💾 File Support</h3>
+                <h3 style="color: var(--primary-color);">💾 Export Options</h3>
                 <ul style="padding-left: 1.2rem;">
-                    <li><strong>Open:</strong> .fountain, .filmproj, .txt files</li>
-                    <li><strong>Save As:</strong> .fountain, .filmproj, .pdf formats</li>
-                    <li><strong>Export:</strong> Individual scene cards as PNG images</li>
-                    <li><strong>Share:</strong> Individual cards via native sharing</li>
+                    <li><strong>Individual Images:</strong> Each card saved as separate PNG</li>
+                    <li><strong>PDF Export:</strong> Industry standard screenplay format</li>
+                    <li><strong>Fountain Format:</strong> Standard screenwriting text format</li>
+                    <li><strong>FilmProj Format:</strong> Custom project format for complex scenes</li>
                 </ul>
             </div>`
         );
@@ -1463,10 +1453,11 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
 
         history.add(fountainInput ? fountainInput.value : '');
 
-        console.log('✅ ToscripT Professional initialized with image export!');
-        console.log('🖼️ Save button now exports each card as high-quality PNG image');
-        console.log('🎞️ Professional card format with huge description areas');
-        console.log('📱 Perfect mobile experience with keyboard toolbar');
+        console.log('✅ ToscripT Professional initialized with side buttons!');
+        console.log('🎞️ Buttons positioned vertically on right side like material design');
+        console.log('🖼️ Save button now exports each card as individual PNG images');
+        console.log('📱 Small scene number field (4 digits max, 50px width)');
+        console.log('🖨️ Print-ready cards with white background and black text');
         console.log('🌍 Ready to create professional screenplay cards! 🎬');
     }
 
