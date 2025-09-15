@@ -906,3 +906,38 @@ body.fullscreen-active .main-content {
         font-size: 7pt !important;
     }
 }
+
+/* iOS/Safari specific keyboard fixes */
+@supports (-webkit-touch-callout: none) {
+    .mobile-keyboard-toolbar {
+        /* Additional iOS-specific positioning */
+        bottom: max(env(keyboard-inset-height, 0px), env(safe-area-inset-bottom, 0px));
+    }
+}
+
+/* Scrollbar Styles */
+textarea::-webkit-scrollbar, 
+#screenplay-output::-webkit-scrollbar, 
+#scene-list::-webkit-scrollbar, 
+.card-body::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar { 
+    width: 8px; 
+}
+
+textarea::-webkit-scrollbar-track, 
+#screenplay-output::-webkit-scrollbar-track, 
+#scene-list::-webkit-scrollbar-track, 
+.card-body::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track { 
+    background: transparent; 
+}
+
+textarea::-webkit-scrollbar-thumb, 
+#screenplay-output::-webkit-scrollbar-thumb, 
+#scene-list::-webkit-scrollbar-thumb, 
+.card-body::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb { 
+    background-color: var(--border-color); 
+    border-radius: 20px; 
+}
+
