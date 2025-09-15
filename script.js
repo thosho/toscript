@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("ToscripT Initializing with Universal Project Logic...");
+    console.log("ToscripT Initializing...");
 
     let projectData = {};
     let fontSize = 16;
@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
         safeAddListener('about-btn', 'click', () => document.getElementById('about-modal').classList.add('open'));
         safeAddListener('project-info-btn', 'click', openProjectInfoModal);
         safeAddListener('title-page-btn', 'click', openTitlePageModal);
+        safeAddListener('clear-project-btn', 'click', clearProject);
         safeAddListener('show-script-btn', 'click', () => switchView('script'));
         safeAddListener('show-write-btn', 'click', () => switchView('write'));
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
@@ -180,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSaveProjectInfo() { projectData.projectInfo.prodName = document.getElementById('prod-name-input').value; projectData.projectInfo.directorName = document.getElementById('director-name-input').value; projectData.projectInfo.projectName = projectData.projectInfo.prodName || "Untitled"; saveProjectData(); document.getElementById('project-info-modal').classList.remove('open'); }
     function openTitlePageModal() { document.getElementById('title-page-modal').classList.add('open'); document.getElementById('title-input').value = projectData.projectInfo.projectName || ''; document.getElementById('author-input').value = projectData.projectInfo.prodName || ''; }
     function saveTitlePage() { projectData.projectInfo.projectName = document.getElementById('title-input').value || "Untitled"; projectData.projectInfo.prodName = document.getElementById('author-input').value || "Author"; saveProjectData(); document.getElementById('title-page-modal').classList.remove('open'); }
+    function clearProject() { if (confirm('Are you sure? This will delete the current script and all project info.')) { fountainInput.value = ''; projectData = createNewProjectObject(); history.stack = [""]; history.currentIndex = 0; history.updateButtons(); saveProjectData(); setPlaceholder(); } }
     
     function getFilteredScriptText() {
         const category = filterCategorySelect.value;
@@ -229,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createModalHTML('project-info-modal', 'Project Info', `<div class="form-group"><label for="prod-name-input">Production Name / Title</label><input type="text" id="prod-name-input"></div><div class="form-group"><label for="director-name-input">Author / Writer</label><input type="text" id="director-name-input"></div>`, `<button id="save-project-info-btn" class="main-action-btn">Save</button>`);
     createModalHTML('about-modal', 'About ToscripT', `<p style="text-align: center;">Designed by Thosho Tech</p>`, '');
-    createModalHTML('about-modal', 'About ToscripT', `<p style="text-align: center;">Designed by Thosho Tech</p>`, '');
     createModalHTML('info-modal', 'Info & Help', `<h3>Fountain Syntax</h3><ul><li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li><li><strong>Character:</strong> Any line in all uppercase.</li><li><strong>Dialogue:</strong> Text following a Character.</li></ul><h3>Button Guide</h3><ul><li><strong>Aa:</strong> Toggles current line to UPPERCASE.</li><li><strong>():</strong> Wraps selected text in parentheses.</li></ul>`, '');
     createModalHTML('title-page-modal', 'Title Page', `<div class="form-group"><label for="title-input">Title</label><input type="text" id="title-input"></div><div class="form-group"><label for="author-input">Author</label><input type="text" id="author-input"></div>`, `<button id="save-title-btn" class="main-action-btn">Save</button>`);
     
@@ -239,15 +240,5 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
     function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
     
-       // Initialize the application
-
-setupEventListeners();
-
-loadProjectData();
-
-setPlaceholder();
-
-history.updateButtons();
-
-
+    initialize();
 });
