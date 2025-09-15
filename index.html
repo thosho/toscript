@@ -19,14 +19,14 @@
 </head>
 <body>
     <header id="main-header" class="page-header">
-        <button id="hamburger-btn" class="icon-btn" title="Menu">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h1>ToscripT</h1>
+        <div class="header-left">
+            <button id="hamburger-btn" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="header-center">
+            <button id="show-script-btn" class="main-action-btn header-btn">TO SCRIPT</button>
+        </div>
         <div class="header-right">
-            <button id="scene-navigator-btn" class="icon-btn" title="Scene Navigator & Filters">
-                <i class="fas fa-layer-group"></i>
-            </button>
+            <button id="scene-navigator-btn" class="icon-btn" title="Scene Navigator & Filters"><i class="fas fa-layer-group"></i></button>
         </div>
     </header>
 
@@ -53,7 +53,6 @@
                 <span><i class="fas fa-hashtag"></i> Scene Nos.</span>
                 <span id="scene-no-indicator" class="indicator on"></span>
             </a>
-            <!-- NEW "Clear Project" BUTTON -->
             <a href="#" id="clear-project-btn"><i class="fas fa-eraser"></i> Clear Project</a>
             <hr style="border-color: var(--border-color); margin: 0.5rem 0;">
             <a href="#" id="info-btn"><i class="fas fa-question-circle"></i> Info & Help</a>
@@ -67,6 +66,8 @@
                 <button id="card-view-btn" class="toolbar-btn" title="Card View"><i class="fas fa-grip-vertical"></i></button>
                 <button id="zoom-in-btn" class="toolbar-btn" title="Zoom In"><i class="fas fa-search-plus"></i></button>
                 <button id="zoom-out-btn" class="toolbar-btn" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                <button id="undo-btn-top" class="toolbar-btn" disabled title="Undo"><i class="fas fa-undo"></i></button>
+                <button id="redo-btn-top" class="toolbar-btn" disabled title="Redo"><i class="fas fa-redo"></i></button>
                 <button id="fullscreen-btn-main" class="toolbar-btn" title="Toggle Fullscreen"><i class="fas fa-expand"></i></button>
             </div>
             <div class="editor-area">
@@ -77,8 +78,6 @@
                     <button class="action-btn" data-action="caps" title="Toggle Case (UPPER/lower)">Aa</button>
                     <button class="action-btn" data-action="parens" title="Add Parentheses">()</button>
                     <button class="action-btn" data-action="transition" title="Cycle Transition">TO:</button>
-                    <button id="undo-btn" class="toolbar-btn" disabled title="Undo"><i class="fas fa-undo"></i></button>
-                    <button id="redo-btn" class="toolbar-btn" disabled title="Redo"><i class="fas fa-redo"></i></button>
                 </div>
             </div>
             <div class="bottom-bar">
@@ -91,22 +90,15 @@
                     <button id="undo-btn-mobile" class="toolbar-btn" disabled><i class="fas fa-undo"></i></button>
                     <button id="redo-btn-mobile" class="toolbar-btn" disabled><i class="fas fa-redo"></i></button>
                 </div>
-                <button id="show-script-btn" class="main-action-btn">TO SCRIPT</button>
             </div>
         </div>
         <div id="script-view" class="view">
-            <div class="preview-area">
-                <div id="screenplay-output"></div>
-            </div>
-            <div class="bottom-bar">
-                <button id="show-write-btn" class="main-action-btn secondary">TO WRITE</button>
-            </div>
+            <div class="preview-area"><div id="screenplay-output"></div></div>
+            <div class="bottom-bar"><button id="show-write-btn" class="main-action-btn secondary">TO WRITE</button></div>
         </div>
         <div id="card-view" class="view">
              <div id="card-container"></div>
-             <div class="bottom-bar">
-                <button id="show-write-btn-from-card" class="main-action-btn secondary">TO WRITE</button>
-            </div>
+             <div class="bottom-bar"><button id="show-write-btn-from-card" class="main-action-btn secondary">TO WRITE</button></div>
         </div>
     </main>
 
@@ -117,12 +109,7 @@
         </div>
         <div class="panel-section">
             <h4>Filter Script</h4>
-            <select id="filter-category-select">
-                <option value="all">Show All Scenes</option>
-                <option value="sceneSetting">Scene Setting</option>
-                <option value="sceneType">INT./EXT.</option>
-                <option value="cast">Character</option>
-            </select>
+            <select id="filter-category-select"><option value="all">Show All Scenes</option><option value="sceneSetting">Scene Setting</option><option value="sceneType">INT./EXT.</option><option value="cast">Character</option></select>
             <input type="text" id="filter-value-input" placeholder="Type to filter..." style="display: none;">
         </div>
         <div class="panel-section">
