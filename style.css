@@ -1096,3 +1096,22 @@ textarea::-webkit-scrollbar-thumb,
     background-color: var(--border-color);
     border-radius: 20px;
 }
+
+/* --- PATCH: Increase Gap Between Card and Share Button --- */
+
+/* This pushes the button further to the right, creating a larger gap. */
+.card-actions {
+    position: absolute;
+    right: -55px; /* Increased from -50px to add more space */
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+/* This adjusts the hover position to maintain the animation and gap. */
+.scene-card:hover .card-actions {
+    opacity: 1;
+    right: -50px; /* Increased from -45px */
+}
