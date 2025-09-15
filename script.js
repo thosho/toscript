@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setPlaceholder() { if (fountainInput.value === '') { fountainInput.value = placeholderText; fountainInput.classList.add('placeholder'); } }
     function clearPlaceholder() { if (fountainInput.classList.contains('placeholder')) { fountainInput.value = ''; fountainInput.classList.remove('placeholder'); } }
-
+    
     function setupEventListeners() {
         const safeAddListener = (id, event, handler) => { const el = document.getElementById(id); if(el) el.addEventListener(event, handler); };
         
@@ -59,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
         safeAddListener('show-write-btn', 'click', () => switchView('write'));
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
         safeAddListener('card-view-btn', 'click', () => switchView('card'));
-        safeAddListener('hamburger-btn', 'click', () => menuPanel.classList.toggle('open'));
-        document.addEventListener('click', (e) => { if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && e.target.id !== 'hamburger-btn' && !e.target.closest('#hamburger-btn')) { menuPanel.classList.remove('open'); } });
+        safeAddListener('hamburger-btn', 'click', (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); });
+        document.addEventListener('click', (e) => { if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && !e.target.closest('#hamburger-btn')) { menuPanel.classList.remove('open'); } });
         safeAddListener('zoom-in-btn', 'click', () => { fontSize = Math.min(32, fontSize + 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('zoom-out-btn', 'click', () => { fontSize = Math.max(10, fontSize - 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('scene-no-btn', 'click', toggleSceneNumbers);
@@ -76,17 +76,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.body.addEventListener('click', (e) => {
             const modal = e.target.closest('.modal');
-            if (e.target.classList.contains('modal-close-btn') || e.target === modal) {
-               if(modal) modal.classList.remove('open');
-            }
+            if (e.target.classList.contains('modal-close-btn') || e.target === modal) { if(modal) modal.classList.remove('open'); }
             if (e.target.id === 'save-title-btn') saveTitlePage();
             if (e.target.id === 'save-project-info-btn') handleSaveProjectInfo();
-            
-            const editCardBtn = e.target.closest('.edit-card-btn');
-            if(editCardBtn) editSceneFromCard(editCardBtn.closest('.scene-card').dataset.sceneId);
-            
-            const shareCardBtn = e.target.closest('.share-card-btn');
-            if(shareCardBtn) shareSceneCardAsImage(shareCardBtn.closest('.scene-card'));
+            const editCardBtn = e.target.closest('.edit-card-btn'); if(editCardBtn) editSceneFromCard(editCardBtn.closest('.scene-card').dataset.sceneId);
+            const shareCardBtn = e.target.closest('.share-card-btn'); if(shareCardBtn) shareSceneCardAsImage(shareCardBtn.closest('.scene-card'));
         });
     }
 
@@ -244,7 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
     function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
     
-   // Initialize the application
+    // Initialize the application
 setupEventListeners();
 loadProjectData();
 setPlaceholder();
