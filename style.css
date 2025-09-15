@@ -433,7 +433,6 @@ body.fullscreen-active .main-content {
     flex-shrink: 0;
 }
 
-/* Mobile Keyboard Toolbar */
 .mobile-keyboard-toolbar {
     position: fixed;
     left: 0;
@@ -516,7 +515,6 @@ body.fullscreen-active .main-content {
     line-height: 1.5;
 }
 
-/* Industry Standard Screenplay Formatting */
 .title-page {
     text-align: center;
     margin-bottom: 4rem;
@@ -588,22 +586,23 @@ body.fullscreen-active .main-content {
     margin-right: 1in;
 }
 
+/* === CARD VIEW SECTION START (ALL CHANGES ARE HERE) === */
+
 #card-view {
     overflow-y: auto;
-    padding: 1rem;
+    width: 100%;
 }
 
-/* === MODIFIED SECTION START === */
-
-/* 1. Reduced unnecessary space in the main frame */
+/* 1. Aligned grid to the left and reduced frame spacing */
 #card-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-    gap: 25px; /* Keeps a decent space between cards */
-    padding: 20px; /* Reduced from 30px */
-    justify-items: center;
+    gap: 25px;
+    padding: 20px;
+    padding-right: 60px; /* Added space on the right for the floating button */
+    justify-items: start; /* Aligns cards to the left */
     max-width: 1800px;
-    margin: 0 auto;
+    margin: 0; /* Removed auto margin to align left */
 }
 
 .scene-card {
@@ -611,20 +610,21 @@ body.fullscreen-active .main-content {
     color: var(--card-text-color) !important;
     border: 1px solid var(--card-border-color) !important;
     border-radius: 12px;
-    padding: 20px;
+    padding: 15px; /* MODIFIED: Reduced padding to save space */
     display: flex;
-    position: relative; /* Crucial for positioning the button */
+    position: relative;
     cursor: grab;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    width: 100%; /* Let the grid manage width */
+    width: 100%;
     max-width: 450px;
-    height: 320px;
+    min-height: 280px; /* MODIFIED: Set a min-height instead of fixed height */
+    height: auto; /* MODIFIED: Allows card to grow with content */
     font-family: 'Courier New', 'Courier Prime', monospace;
     font-size: 12px;
     line-height: 1.4;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible; /* MODIFIED: Allows button to show outside */
 }
 
 .scene-card:hover {
@@ -639,22 +639,29 @@ body.fullscreen-active .main-content {
     z-index: 1000;
 }
 
-/* 2. Positioned share button on the side (desktop) */
+/* 2. Moved share button OUTSIDE the card */
 .card-actions {
     position: absolute;
-    right: 15px;
+    right: -50px; /* Positioned outside the card */
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
+    opacity: 0; /* Hidden by default */
+    transition: all 0.3s ease;
 }
 
-/* 3. Re-styled share button to be smaller and blend in */
+/* The button now appears on card hover */
+.scene-card:hover .card-actions {
+    opacity: 1;
+    right: -45px; /* Slides in slightly on hover */
+}
+
 .card-actions .icon-btn {
-    width: 36px; /* Reduced size */
-    height: 36px; /* Reduced size */
+    width: 36px;
+    height: 36px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
-    background: rgba(55, 65, 81, 0.5); /* Subtle background */
+    background: rgba(55, 65, 81, 0.8);
     color: var(--muted-text-color);
     font-size: 16px;
     cursor: pointer;
@@ -664,14 +671,13 @@ body.fullscreen-active .main-content {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Removed unnecessary properties like writing-mode */
 }
 
 .card-actions .icon-btn:hover {
-    background: rgba(75, 85, 99, 0.8); /* Subtle hover */
+    background: rgba(75, 85, 99, 1);
     color: var(--text-color);
-    transform: scale(1.1); /* Kept hover transform */
-    box-shadow: none; /* Removed blue shadow */
+    transform: scale(1.1);
+    box-shadow: none;
 }
 
 .scene-card-content {
@@ -686,16 +692,15 @@ body.fullscreen-active .main-content {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 10px; /* MODIFIED: Reduced space */
     padding-bottom: 8px;
     border-bottom: 1px solid var(--card-border-color);
     min-height: 32px;
     flex-shrink: 0;
 }
 
-/* 4. Widened the scene title field to prevent wrapping */
 .card-scene-title {
-    flex-grow: 1; /* Allows it to take all available space */
+    flex-grow: 1;
     font-weight: bold;
     text-transform: uppercase;
     font-family: 'Courier New', 'Courier Prime', monospace;
@@ -706,7 +711,7 @@ body.fullscreen-active .main-content {
     border-radius: 4px;
     outline: none;
     background: transparent;
-    margin-right: 12px; /* Small margin for spacing */
+    margin-right: 12px;
     min-height: 20px;
     color: var(--card-text-color) !important;
 }
@@ -732,11 +737,11 @@ body.fullscreen-active .main-content {
     border: 1px solid var(--card-border-color) !important;
     border-radius: 6px;
     padding: 4px 6px;
-    width: 54px; /* Increased by ~8% from 50px */
+    width: 54px;
     max-width: 54px;
     text-align: center;
     outline: none;
-    flex-shrink: 0; /* Prevents it from shrinking */
+    flex-shrink: 0;
 }
 
 .card-scene-number:focus {
@@ -747,28 +752,28 @@ body.fullscreen-active .main-content {
 }
 
 .card-body {
-    flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    height: auto; /* MODIFIED: Allows body to grow */
 }
 
+/* 3. Styled description field for auto-growing behavior (requires JS) */
 .card-description {
     width: 100%;
-    flex: 1;
-    min-height: 220px;
     border: 1px solid var(--card-border-color) !important;
     border-radius: 8px;
-    padding: 15px;
+    padding: 10px;
     font-family: 'Courier New', 'Courier Prime', monospace;
     font-size: 12px;
     line-height: 1.5;
-    resize: none;
+    resize: none; /* Important for auto-grow */
     outline: none;
     background: rgba(17, 24, 39, 0.8) !important;
     color: var(--card-text-color) !important;
     box-sizing: border-box;
-    overflow-y: auto;
+    overflow-y: hidden; /* Important for auto-grow */
+    min-height: 110px; /* MODIFIED: Default height for ~5 lines */
+    height: auto;
 }
 
 .card-description:focus {
@@ -813,9 +818,6 @@ body.fullscreen-active .main-content {
     pointer-events: none;
     z-index: 1;
 }
-
-/* === MODIFIED SECTION END === */
-
 
 /* Mobile responsive */
 @media (max-width: 768px) {
@@ -875,42 +877,37 @@ body.fullscreen-active .main-content {
         max-width: 90vw;
     }
 
-    /* === MODIFIED MOBILE SECTION START === */
-
     #card-container {
         grid-template-columns: 1fr;
-        gap: 15px; /* Reduced gap for mobile */
-        padding: 15px; /* Reduced padding for mobile */
+        gap: 20px;
+        padding: 15px;
+        padding-right: 55px; /* Space for the button on mobile */
     }
 
     .scene-card {
-        width: 100%; /* Take full width on mobile */
+        width: 100%;
         max-width: none;
-        height: 350px;
+        height: auto; /* Height must be auto on mobile too */
+        min-height: 300px;
     }
 
     .card-description {
-        min-height: 250px;
+        min-height: 180px;
     }
 
-    /* 5. CORRECTED share button position for mobile */
     .card-actions {
-        right: 12px; /* Positioned inside on the right for mobile */
-        /* top and transform properties are inherited from desktop, keeping it centered */
+        right: -48px; /* Positioned outside on mobile */
     }
 
     .card-actions .icon-btn {
-        width: 32px; /* Smaller button for mobile */
+        width: 32px;
         height: 32px;
-        font-size: 14px;
+        font-size: 12px;
     }
 
-    /* 6. CORRECTED scene title width for mobile */
     .card-scene-title {
-        margin-right: 12px; /* Drastically reduced margin from 100px */
+        margin-right: 12px;
     }
-
-    /* === MODIFIED MOBILE SECTION END === */
 }
 
 /* iOS/Safari specific keyboard fixes */
