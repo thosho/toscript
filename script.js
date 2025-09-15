@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoSaveInterval = null; 
     let showSceneNumbers = true; 
     let currentView = 'write';
+    let isKeyboardOpen = false;
     
     // Get DOM elements with error checking
     const fountainInput = document.getElementById('fountain-input');
@@ -21,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const mainHeader = document.getElementById('main-header');
     const scriptHeader = document.getElementById('script-header');
+    const mobileToolbar = document.getElementById('mobile-fixed-toolbar');
 
     const placeholderText = `TITLE: THE CRIMSON DOSSIER\nAUTHOR: YOUR NAME\n\nINT. DETECTIVE'S OFFICE - NIGHT\n\nThe office is a mess of old files. DETECTIVE VIKRAM (40s, tired) stares at a cold cup of coffee.\n\nA mysterious client, MAYA (30s, elegant), enters from the shadows.\n\nMAYA\n(softly)\nAre you the one they call the Ghost of Bangalore?\n\nVIKRAM\nThat depends on who's asking.\n\nFADE OUT.`;
 
@@ -69,6 +71,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }); 
         }
     };
+
+    // Mobile keyboard detection
+    function detectMobileKeyboard() {
+        if (typeof window !== 'undefined' && window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const viewport = window.visualViewport;
+                const wasKeyboardOpen = isKeyboardOpen;
+                isKeyboardOpen = viewport.height < window.innerHeight * 0.75;
+                
+                if (isKeyboardOpen !== wasKeyboardOpen) {
+                    handleKeyboardToggle();
+                }
+            });
+        } else {
+            // Fallback for older browsers
+            let initialViewportHeight = window.innerHeight;
+            window.addEventListener('resize', () => {
+                const wasKeyboardOpen = isKeyboardOpen;
+                isKeyboardOpen = window.innerHeight < initialViewportHeight * 0.75;
+                
+                if (isKeyboardOpen !== wasKeyboardOpen) {
+                    handleKeyboardToggle();
+                }
+            });
+        }
+    }
+
+    function handleKeyboardToggle() {
+        if (mobileToolbar) {
+            if (isKeyboardOpen) {
+                mobileToolbar.style.bottom = '0px';
+                mobileToolbar.style.position = 'fixed';
+                mobileToolbar.style.zIndex = '999';
+            } else {
+                mobileToolbar.style.bottom = '0px';
+                mobileToolbar.style.position = 'fixed';
+                mobileToolbar.style.zIndex = '100';
+            }
+        }
+    }
 
     function setPlaceholder() { 
         if (fountainInput && fountainInput.value === '') { 
@@ -131,7 +173,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Fountain input listeners
         if (fountainInput) {
-            fountainInput.addEventListener('focus', clearPlaceholder);
+            fountainInput.addEventListener('focus', () => {
+                clearPlaceholder();
+                // Scroll into view on mobile
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => {
+                        fountainInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                }
+            });
             fountainInput.addEventListener('blur', setPlaceholder);
             fountainInput.addEventListener('input', () => { 
                 history.add(fountainInput.value); 
@@ -179,11 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
         safeAddListener('title-page-btn', 'click', openTitlePageModal);
         safeAddListener('clear-project-btn', 'click', clearProject);
         
-        // View switching buttons - Main header
+        // View switching buttons - Main header (write mode)
         safeAddListener('show-script-btn', 'click', () => switchView('script'));
         
-        // View switching buttons - Script header
-        safeAddListener('show-write-btn', 'click', () => switchView('write'));
+        // View switching buttons - Script header (script mode)  
+        safeAddListener('show-write-btn-header', 'click', () => switchView('write'));
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
         safeAddListener('card-view-btn', 'click', () => switchView('card'));
         
@@ -338,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
         URL.revokeObjectURL(url); 
     }
 
-    // Fixed Unicode PDF Generation
+    // Enhanced Unicode PDF Generation with Multiple Font Support
     async function saveAsPdfWithUnicode() {
         if (typeof window.jspdf === 'undefined') {
             alert('PDF library not loaded. Please try again.');
@@ -348,56 +398,125 @@ document.addEventListener('DOMContentLoaded', () => {
         const { jsPDF } = window.jspdf;
         
         try {
-            // Create PDF with proper Unicode support
+            // Create PDF with UTF-8 support
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'pt',
-                format: 'a4'
+                format: 'a4',
+                putOnlyUsedFonts: true,
+                compress: true
             });
-            
-            // Load Noto Sans font for Unicode support
-            const fontUrl = 'https://fonts.gstatic.com/s/notosans/v27/o-0IIpQlx3QUlC5A4PNr5TRA.ttf';
-            
-            try {
-                const fontResponse = await fetch(fontUrl);
-                if (fontResponse.ok) {
-                    const fontArrayBuffer = await fontResponse.arrayBuffer();
-                    const fontBase64 = btoa(
-                        new Uint8Array(fontArrayBuffer).reduce((data, byte) => 
-                            data + String.fromCharCode(byte), '')
-                    );
-                    
-                    doc.addFileToVFS('NotoSans-Regular.ttf', fontBase64);
-                    doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
-                    doc.setFont('NotoSans');
-                    console.log('Unicode font loaded successfully');
+
+            // Multiple Unicode font URLs for different language support
+            const fontUrls = [
+                {
+                    name: 'NotoSans',
+                    url: 'https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNB6Ryti20_6n1iPHjcz6L1SoM-jCpoiyD9A.woff2',
+                    fallback: true
+                },
+                {
+                    name: 'NotoSansDevanagari', 
+                    url: 'https://fonts.gstatic.com/s/notosansdevanagari/v25/TuGoUUFzXI5FBtUq5a8bjKYTZjtRU6Sgv3NaV_SNmI0b8QQCQmHn.woff2'
+                },
+                {
+                    name: 'NotoSansCJK',
+                    url: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap'
                 }
-            } catch (fontError) {
-                console.warn('Could not load Unicode font, using default:', fontError);
-                doc.setFont('helvetica');
-            }
+            ];
+
+            let fontLoaded = false;
             
+            // Try to load Unicode fonts
+            for (const fontConfig of fontUrls) {
+                try {
+                    if (fontConfig.url.includes('.woff2')) {
+                        // Skip WOFF2 fonts for now as they need conversion
+                        continue;
+                    }
+                    
+                    const response = await fetch(fontConfig.url);
+                    if (response.ok) {
+                        const fontData = await response.arrayBuffer();
+                        const base64Font = btoa(
+                            new Uint8Array(fontData).reduce((data, byte) => 
+                                data + String.fromCharCode(byte), '')
+                        );
+                        
+                        doc.addFileToVFS(`${fontConfig.name}.ttf`, base64Font);
+                        doc.addFont(`${fontConfig.name}.ttf`, fontConfig.name, 'normal');
+                        
+                        if (fontConfig.fallback) {
+                            doc.setFont(fontConfig.name);
+                            fontLoaded = true;
+                            console.log(`Successfully loaded ${fontConfig.name} font`);
+                            break;
+                        }
+                    }
+                } catch (fontError) {
+                    console.warn(`Failed to load ${fontConfig.name}:`, fontError);
+                    continue;
+                }
+            }
+
+            // If no Unicode font loaded, try a simpler approach
+            if (!fontLoaded) {
+                try {
+                    // Use a CDN TTF font that supports Unicode
+                    const notoUrl = 'https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
+                    const response = await fetch(notoUrl);
+                    
+                    if (response.ok) {
+                        const fontBuffer = await response.arrayBuffer();
+                        const fontBase64 = btoa(
+                            String.fromCharCode(...new Uint8Array(fontBuffer))
+                        );
+                        
+                        doc.addFileToVFS('NotoSans-Regular.ttf', fontBase64);
+                        doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
+                        doc.setFont('NotoSans');
+                        fontLoaded = true;
+                        console.log('Loaded Noto Sans from GitHub');
+                    }
+                } catch (e) {
+                    console.warn('Failed to load GitHub font:', e);
+                }
+            }
+
+            // Fallback to built-in font if Unicode fonts fail
+            if (!fontLoaded) {
+                console.warn('Using fallback font - Unicode characters may not display correctly');
+                doc.setFont('helvetica', 'normal');
+            }
+
+            // Set initial font size
             doc.setFontSize(12);
             
             const text = getFilteredScriptText();
-            const lines = text.split('\n');
+            
+            // Convert text to ensure proper encoding
+            const cleanText = text.normalize('NFC'); // Normalize Unicode characters
+            const lines = cleanText.split('\n');
             
             let y = 50;
             const lineHeight = 14;
-            const pageHeight = 792; // A4 height in points
+            const pageHeight = 792;
             const margin = 50;
+            const maxWidth = 500;
             
-            // Add title page
+            // Title page
             doc.setFontSize(18);
-            doc.text(projectData.projectInfo.projectName || 'Untitled', 300, y, { align: 'center' });
+            const title = projectData.projectInfo.projectName || 'Untitled';
+            doc.text(title, 300, y, { align: 'center', maxWidth: maxWidth });
             y += 30;
             
             doc.setFontSize(14);
-            doc.text(`by ${projectData.projectInfo.prodName || 'Author'}`, 300, y, { align: 'center' });
+            const author = `by ${projectData.projectInfo.prodName || 'Author'}`;
+            doc.text(author, 300, y, { align: 'center', maxWidth: maxWidth });
             y += 50;
             
             doc.setFontSize(12);
             
+            // Process each line with proper Unicode handling
             lines.forEach((line, index) => {
                 if (y > pageHeight - margin) {
                     doc.addPage();
@@ -413,34 +532,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 let x = margin;
                 let fontSize = 12;
-                let fontStyle = 'normal';
                 
                 // Format different screenplay elements
                 if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
                     // Scene headings
-                    fontStyle = 'bold';
                     fontSize = 12;
                     y += lineHeight;
                 } else if (trimmed === trimmed.toUpperCase() && trimmed.length > 0 && !trimmed.includes('.') && trimmed.length < 50) {
                     // Character names
-                    x = 200; // Indent character names
-                    fontStyle = 'bold';
+                    x = 200;
                 } else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
                     // Parentheticals
-                    x = 160; // Indent parentheticals
-                    fontStyle = 'italic';
+                    x = 160;
                 } else if (/^(CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)/.test(trimmed)) {
                     // Transitions
-                    x = 400; // Right-align transitions
-                    fontStyle = 'bold';
+                    x = 400;
                 }
                 
                 doc.setFontSize(fontSize);
                 
                 try {
-                    // Split long lines
-                    const maxWidth = 500;
-                    const splitText = doc.splitTextToSize(trimmed, maxWidth);
+                    // Handle text that might contain Unicode characters
+                    const textToRender = trimmed;
+                    
+                    // Split long lines to fit page width
+                    const splitText = doc.splitTextToSize(textToRender, maxWidth - (x - margin));
                     
                     if (Array.isArray(splitText)) {
                         splitText.forEach((textLine, lineIndex) => {
@@ -448,28 +564,76 @@ document.addEventListener('DOMContentLoaded', () => {
                                 doc.addPage();
                                 y = margin;
                             }
-                            doc.text(textLine, x, y);
+                            
+                            // Try to render with Unicode support
+                            try {
+                                doc.text(textLine, x, y);
+                            } catch (renderError) {
+                                // Fallback: remove problematic characters
+                                const fallbackText = textLine.replace(/[^\x00-\x7F]/g, "?");
+                                doc.text(fallbackText, x, y);
+                                console.warn('Rendered with character replacement:', textLine);
+                            }
+                            
                             if (lineIndex < splitText.length - 1) {
                                 y += lineHeight;
                             }
                         });
                     } else {
-                        doc.text(splitText, x, y);
+                        try {
+                            doc.text(splitText, x, y);
+                        } catch (renderError) {
+                            const fallbackText = splitText.replace(/[^\x00-\x7F]/g, "?");
+                            doc.text(fallbackText, x, y);
+                            console.warn('Rendered with character replacement:', splitText);
+                        }
                     }
                 } catch (textError) {
-                    console.warn('Error rendering text:', trimmed, textError);
-                    // Fallback: render as simple text
-                    doc.text(trimmed.substring(0, 80), x, y);
+                    console.warn('Error rendering line:', trimmed, textError);
+                    // Fallback: render first 80 characters as ASCII
+                    const asciiText = trimmed.substring(0, 80).replace(/[^\x00-\x7F]/g, "?");
+                    doc.text(asciiText, x, y);
                 }
                 
                 y += lineHeight;
             });
             
-            doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
+            // Save the PDF
+            const fileName = `${projectData.projectInfo.projectName || 'screenplay'}.pdf`;
+            doc.save(fileName);
+            
+            console.log('PDF generated successfully');
             
         } catch (error) {
-            console.error('PDF generation error:', error);
-            alert('Error generating PDF. Please try again or check your script content.');
+            console.error('PDF generation failed:', error);
+            
+            // Ultimate fallback: simple text PDF
+            try {
+                const doc = new jsPDF();
+                doc.setFont('helvetica');
+                doc.setFontSize(12);
+                
+                const lines = getFilteredScriptText().split('\n');
+                let y = 20;
+                
+                lines.forEach(line => {
+                    if (y > 280) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    // Convert Unicode to ASCII approximation
+                    const asciiLine = line.replace(/[^\x00-\x7F]/g, "?").substring(0, 80);
+                    doc.text(asciiLine, 20, y);
+                    y += 6;
+                });
+                
+                doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_fallback.pdf`);
+                alert('PDF saved with basic formatting. Some Unicode characters may not display correctly.');
+                
+            } catch (fallbackError) {
+                console.error('Even fallback PDF failed:', fallbackError);
+                alert('Error generating PDF. Please try copying the text and using another PDF tool.');
+            }
         }
     }
 
@@ -554,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return universalData;
     }
 
-    // View functions with header switching
+    // View functions with proper header switching
     function switchView(view) { 
         currentView = view;
         
@@ -563,25 +727,53 @@ document.addEventListener('DOMContentLoaded', () => {
         if (scriptView) scriptView.classList.remove('active');
         if (cardView) cardView.classList.remove('active');
         
-        // Hide all headers
-        if (mainHeader) mainHeader.style.display = 'flex';
-        if (scriptHeader) scriptHeader.style.display = 'none';
-        
+        // Handle header switching and mobile toolbar
         if (view === 'script' && scriptView) { 
             renderScript(); 
             scriptView.classList.add('active');
             // Show script header, hide main header
             if (mainHeader) mainHeader.style.display = 'none';
             if (scriptHeader) scriptHeader.style.display = 'flex';
+            // Hide mobile toolbar in script view
+            if (mobileToolbar) mobileToolbar.style.display = 'none';
         } else if (view === 'card' && cardView) { 
             renderCardView(); 
-            cardView.classList.add('active'); 
+            cardView.classList.add('active');
+            // Show main header, hide script header
+            if (mainHeader) mainHeader.style.display = 'flex';
+            if (scriptHeader) scriptHeader.style.display = 'none';
+            // Hide mobile toolbar in card view
+            if (mobileToolbar) mobileToolbar.style.display = 'none';
         } else if (writeView) { 
             writeView.classList.add('active');
             // Show main header, hide script header
             if (mainHeader) mainHeader.style.display = 'flex';
             if (scriptHeader) scriptHeader.style.display = 'none';
+            // Show mobile toolbar only in write view on mobile
+            if (mobileToolbar && window.innerWidth <= 768) {
+                mobileToolbar.style.display = 'block';
+            }
+            
+            // Focus on textarea after switching
+            setTimeout(() => {
+                if (fountainInput) {
+                    fountainInput.focus();
+                }
+            }, 100);
         } 
+        
+        // Update mobile toolbar visibility based on view
+        updateMobileToolbarVisibility();
+    }
+
+    function updateMobileToolbarVisibility() {
+        if (mobileToolbar && window.innerWidth <= 768) {
+            if (currentView === 'write') {
+                mobileToolbar.style.display = 'block';
+            } else {
+                mobileToolbar.style.display = 'none';
+            }
+        }
     }
 
     function renderScript() { 
@@ -593,6 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Simple script rendering
         const lines = text.split('\n');
         let scriptHtml = '';
+        let sceneCount = 0;
         
         lines.forEach(line => {
             const trimmed = line.trim();
@@ -602,14 +795,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
-                const sceneNum = showSceneNumbers ? `${Math.floor(Math.random() * 100) + 1}. ` : '';
+                sceneCount++;
+                const sceneNum = showSceneNumbers ? `${sceneCount}. ` : '';
                 scriptHtml += `<h3 class="scene-heading">${sceneNum}${trimmed}</h3>`;
             } else if (trimmed === trimmed.toUpperCase() && trimmed.length > 0 && !trimmed.includes('.') && trimmed.length < 50) {
                 scriptHtml += `<div class="character">${trimmed}</div>`;
             } else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
                 scriptHtml += `<div class="parenthetical">${trimmed}</div>`;
-            } else if (/^(CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)/.test(trimmed)) {
-                scriptHtml += `<div class="transition">${trimmed}</div>`;
+            } else if (/^(CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:|FADE TO BLACK\.|INT\./EXT\.)/.test(trimmed)) {
+                if (trimmed.includes('TO:') || trimmed.includes('FADE')) {
+                    scriptHtml += `<div class="transition">${trimmed}</div>`;
+                }
             } else if (trimmed.length > 0) {
                 scriptHtml += `<div class="action">${trimmed}</div>`;
             }
@@ -687,15 +883,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']); 
                 break; 
             case 'time': 
-                cycleText([' - DAY', ' - NIGHT']); 
+                cycleText([' - DAY', ' - NIGHT', ' - MORNING', ' - EVENING']); 
                 break; 
             case 'transition': 
-                cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:']); 
+                cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:', 'FADE TO BLACK.']); 
                 break; 
         } 
         
         history.add(fountainInput.value);
-        fountainInput.focus(); // Keep focus on the textarea
+        
+        // Keep focus and prevent keyboard from closing
+        setTimeout(() => {
+            if (fountainInput) {
+                fountainInput.focus();
+            }
+        }, 10);
     }
 
     function cycleText(options) { 
@@ -1001,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h3 style="color: var(--primary-color);">Button Guide</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>I/E:</strong> Cycles INT./EXT./INT./EXT.</li>
-                    <li><strong>D/N:</strong> Cycles DAY/NIGHT time.</li>
+                    <li><strong>D/N:</strong> Cycles DAY/NIGHT/MORNING/EVENING.</li>
                     <li><strong>Aa:</strong> Toggles line to UPPERCASE/lowercase.</li>
                     <li><strong>():</strong> Wraps selected text in parentheses.</li>
                     <li><strong>TO:</strong> Cycles transition types.</li>
@@ -1024,6 +1226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setupEventListeners();
         loadProjectData();
+        detectMobileKeyboard();
         
         if(fountainInput) {
             if(fountainInput.value === '') {
@@ -1039,6 +1242,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }, 500);
         }
+        
+        // Handle window resize for mobile toolbar
+        window.addEventListener('resize', () => {
+            updateMobileToolbarVisibility();
+        });
         
         history.add(fountainInput ? fountainInput.value : '');
         console.log('ToscripT initialized successfully!');
