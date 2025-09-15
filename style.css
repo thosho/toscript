@@ -637,16 +637,16 @@ body.fullscreen-active .main-content {
 }
 
 /* FIXED: Action buttons on RIGHT side vertically like in your image */
-.card-actions { 
+card-actions {
     position: absolute;
-    right: -15px;
+    right: 15px; /* Changed from a negative value to be inside the card */
     top: 50%;
     transform: translateY(-50%);
-    display: flex;
+    display: flex; /* Kept as flex in case you add more buttons later */
     flex-direction: column;
     gap: 10px;
     z-index: 10;
-    opacity: 0;
+    opacity: 1; /* Changed from 0 to make it always visible */
     transition: all 0.3s ease;
 }
 
@@ -739,12 +739,12 @@ body.fullscreen-active .main-content {
     border: 1px solid var(--card-border-color) !important;
     border-radius: 6px;
     padding: 4px 6px;
-    width: 50px; /* FIXED: Small width for 4 digits only */
-    max-width: 50px;
+    width: 54px; /* CHANGED: 50px * 1.08 = 54px */
+    max-width: 54px; /* CHANGED: 50px * 1.08 = 54px */
     text-align: center;
     outline: none;
     flex-shrink: 0;
-    transform: translateX(-5px); /* ADD THIS LINE */
+    transform: translateX(-5px);
 }
 
 .card-scene-number:focus {
