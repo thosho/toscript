@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🎬 ToscripT Professional - Complete Fixed Version");
+    console.log("🎬 ToscripT Professional - Industry Standard Implementation");
     
     // Global variables
     let projectData = { 
@@ -163,7 +163,7 @@ FADE OUT.`;
         }
     }
 
-    // FIXED: Enhanced Save/Load with .filmproj support
+    // Enhanced Save/Load with .filmproj support
     function saveProjectData() {
         if (fountainInput) {
             projectData.projectInfo.scriptContent = fountainInput.value;
@@ -196,13 +196,12 @@ FADE OUT.`;
         updateAutoSaveIndicator();
     }
 
-    // FIXED: Enhanced View Switching with + Button Management
+    // View Switching with + Button Management
     function switchView(view) {
         currentView = view;
         [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
         [mainHeader, scriptHeader, cardHeader].forEach(h => h && (h.style.display = 'none'));
         
-        // Hide + button by default
         const addBtn = document.getElementById('add-new-card-btn');
         if (addBtn) addBtn.style.display = 'none';
         
@@ -216,7 +215,7 @@ FADE OUT.`;
             cardView?.classList.add('active');
             if (cardHeader) cardHeader.style.display = 'flex';
             renderEnhancedCardView();
-            setupAddNewCardButton(); // Show + button only in card view
+            setupAddNewCardButton();
         } else {
             writeView?.classList.add('active');
             if (mainHeader) mainHeader.style.display = 'flex';
@@ -227,79 +226,6 @@ FADE OUT.`;
                 }
             }, 200);
         }
-    }
-
-    // FIXED: Filter functionality
-    function handleFilterChange() {
-        const selectedValue = filterCategorySelect?.value;
-        
-        if (selectedValue === 'all') {
-            if (filterValueInput) filterValueInput.style.display = 'none';
-            if (filterHelpText) filterHelpText.style.display = 'none';
-        } else {
-            if (filterValueInput) filterValueInput.style.display = 'block';
-            if (filterHelpText) filterHelpText.style.display = 'block';
-            
-            const helpTexts = {
-                'sceneSetting': 'Enter location (e.g., OFFICE, KITCHEN)',
-                'sceneType': 'Enter INT, EXT, or INT./EXT.',
-                'cast': 'Enter character name',
-                'timeOfDay': 'Enter DAY, NIGHT, MORNING, etc.'
-            };
-            
-            if (filterHelpText) filterHelpText.textContent = helpTexts[selectedValue] || 'Enter keywords to filter';
-        }
-        
-        if (filterValueInput) filterValueInput.value = '';
-    }
-
-    // Scene indicators
-    function updateSceneNoIndicator() {
-        const indicator = document.getElementById('scene-no-indicator');
-        if (indicator) {
-            indicator.classList.toggle('on', showSceneNumbers);
-            indicator.classList.toggle('off', !showSceneNumbers);
-        }
-    }
-
-    function updateAutoSaveIndicator() {
-        const indicator = document.getElementById('auto-save-indicator');
-        if (indicator) {
-            indicator.classList.toggle('on', !!autoSaveInterval);
-            indicator.classList.toggle('off', !autoSaveInterval);
-        }
-    }
-
-    function toggleSceneNumbers() {
-        showSceneNumbers = !showSceneNumbers;
-        updateSceneNoIndicator();
-        saveProjectData();
-        if (currentView === 'script') renderEnhancedScript();
-    }
-
-    function toggleAutoSave() {
-        if (autoSaveInterval) {
-            clearInterval(autoSaveInterval);
-            autoSaveInterval = null;
-            alert('Auto-save disabled');
-        } else {
-            autoSaveInterval = setInterval(saveProjectData, 120000);
-            alert('Auto-save enabled (every 2 minutes)');
-        }
-        updateAutoSaveIndicator();
-    }
-
-    // FIXED: Zoom functionality
-    function handleZoomIn() {
-        fontSize = Math.min(32, fontSize + 2);
-        if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
-        console.log(`🔍 Font size: ${fontSize}px`);
-    }
-
-    function handleZoomOut() {
-        fontSize = Math.max(10, fontSize - 2);
-        if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
-        console.log(`🔍 Font size: ${fontSize}px`);
     }
 
     // Industry Standard Screenplay Parsing
@@ -427,7 +353,7 @@ FADE OUT.`;
         screenplayOutput.innerHTML = scriptHtml;
     }
 
-    // FIXED: Extract scenes from text for .filmproj format
+    // Extract scenes from text for .filmproj format
     function extractScenesFromText(text) {
         const elements = parseScriptWithIndustryStandards(text || '');
         const scenes = [];
@@ -452,7 +378,7 @@ FADE OUT.`;
         return scenes;
     }
 
-    // FIXED: Professional Cards with Proper Formatting and Editing
+    // FIXED: Professional Cards with Proper Formatting and Large Description Area
     function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer || !fountainInput) return;
@@ -493,7 +419,7 @@ FADE OUT.`;
                 <div class="scene-card-content">
                     <div class="card-header">
                         <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">${scene.heading}</div>
-                        <div class="card-scene-number">#${scene.sceneNumber}</div>
+                        <input class="card-scene-number" type="text" value="#${scene.sceneNumber}" maxlength="5" data-scene-id="${scene.sceneId}" />
                     </div>
                     <div class="card-body">
                         <textarea class="card-description" placeholder="Enter scene description..." data-scene-id="${scene.sceneId}">${scene.description.join('\n')}</textarea>
@@ -526,10 +452,10 @@ FADE OUT.`;
             });
         }
 
-        console.log(`🎞️ Rendered ${scenes.length} editable cards`);
+        console.log(`🎞️ Rendered ${scenes.length} professional cards with large description areas`);
     }
 
-    // FIXED: Setup + Button for Adding New Cards
+    // Setup + Button for Adding New Cards
     function setupAddNewCardButton() {
         if (!cardHeader) return;
 
@@ -542,7 +468,6 @@ FADE OUT.`;
             addBtn.className = 'icon-btn';
             addBtn.style.marginRight = '1rem';
             
-            // Insert before save button
             const saveBtn = document.getElementById('save-all-cards-btn');
             if (saveBtn) {
                 cardHeader.querySelector('.header-right').insertBefore(addBtn, saveBtn);
@@ -556,7 +481,7 @@ FADE OUT.`;
         addBtn.style.display = 'inline-flex';
     }
 
-    // FIXED: Add New Scene Card Function
+    // Add New Scene Card Function
     function addNewSceneCard() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer) return;
@@ -567,7 +492,7 @@ FADE OUT.`;
                 <div class="scene-card-content">
                     <div class="card-header">
                         <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">INT. NEW LOCATION - DAY</div>
-                        <div class="card-scene-number">#${newSceneNumber}</div>
+                        <input class="card-scene-number" type="text" value="#${newSceneNumber}" maxlength="5" data-scene-id="scene_${newSceneNumber}" />
                     </div>
                     <div class="card-body">
                         <textarea class="card-description" placeholder="Enter scene description..." data-scene-id="scene_${newSceneNumber}"></textarea>
@@ -586,12 +511,10 @@ FADE OUT.`;
 
         cardContainer.insertAdjacentHTML('beforeend', newCardHtml);
         
-        // Focus on the new card for immediate editing
         const newCard = cardContainer.lastElementChild;
         const titleElement = newCard.querySelector('.card-scene-title');
         titleElement.focus();
         
-        // Select all text for easy replacement
         if (window.getSelection) {
             const selection = window.getSelection();
             const range = document.createRange();
@@ -600,42 +523,41 @@ FADE OUT.`;
             selection.addRange(range);
         }
 
-        // Bind events to new card
         bindCardEditingEvents();
         syncCardsToEditor();
 
-        console.log('➕ New scene card added');
+        console.log('➕ New scene card added with large description area');
     }
 
-    // FIXED: Bind Card Editing Events with Sync
+    // Bind Card Editing Events with Sync
     function bindCardEditingEvents() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer) return;
 
-        // Remove old event listeners to prevent duplicates
         cardContainer.removeEventListener('input', handleCardInput);
         cardContainer.removeEventListener('blur', handleCardBlur);
 
-        // Add event delegation for all card inputs
         cardContainer.addEventListener('input', handleCardInput);
         cardContainer.addEventListener('blur', handleCardBlur);
     }
 
     function handleCardInput(e) {
         if (e.target.classList.contains('card-scene-title') || 
-            e.target.classList.contains('card-description')) {
+            e.target.classList.contains('card-description') ||
+            e.target.classList.contains('card-scene-number')) {
             syncCardsToEditor();
         }
     }
 
     function handleCardBlur(e) {
         if (e.target.classList.contains('card-scene-title') || 
-            e.target.classList.contains('card-description')) {
+            e.target.classList.contains('card-description') ||
+            e.target.classList.contains('card-scene-number')) {
             syncCardsToEditor();
         }
     }
 
-    // FIXED: Sync Cards to Editor (Bidirectional)
+    // Sync Cards to Editor (Bidirectional)
     function syncCardsToEditor() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer || !fountainInput) return;
@@ -646,12 +568,12 @@ FADE OUT.`;
         cards.forEach((card, index) => {
             const titleElement = card.querySelector('.card-scene-title');
             const descriptionElement = card.querySelector('.card-description');
+            const numberElement = card.querySelector('.card-scene-number');
             
             let title = titleElement ? titleElement.textContent.trim() : '';
             let description = descriptionElement ? descriptionElement.value.trim() : '';
             
             if (title) {
-                // Ensure proper scene heading format
                 if (!title.match(/^(INT\.?\/EXT\.?|INT\.|EXT\.)/i)) {
                     title = `INT. ${title}`;
                 }
@@ -662,15 +584,16 @@ FADE OUT.`;
                 scriptText += `${description}\n\n`;
             }
             
-            // Update scene number display
-            const numberElement = card.querySelector('.card-scene-number');
-            if (numberElement) {
-                numberElement.textContent = `#${index + 1}`;
-                card.dataset.sceneNumber = index + 1;
+            // Update scene number display if it's auto-generated
+            if (numberElement && numberElement.value.startsWith('#')) {
+                const currentNum = numberElement.value.replace('#', '');
+                if (!isNaN(currentNum)) {
+                    numberElement.value = `#${index + 1}`;
+                    card.dataset.sceneNumber = index + 1;
+                }
             }
         });
 
-        // Update editor without triggering infinite loop
         if (scriptText.trim() !== fountainInput.value.trim()) {
             const cursorPosition = fountainInput.selectionStart;
             fountainInput.value = scriptText.trim();
@@ -773,7 +696,7 @@ FADE OUT.`;
         }
     }
 
-    // FIXED: Share Scene Card with Perfect Formatting
+    // FIXED: Share Scene Card with Perfect Professional Formatting
     async function shareSceneCard(sceneId) {
         const cardElement = document.querySelector(`[data-scene-id="${sceneId}"]`);
         if (!cardElement || typeof html2canvas === 'undefined') {
@@ -785,12 +708,11 @@ FADE OUT.`;
             const actionsDiv = cardElement.querySelector('.card-actions');
             actionsDiv.style.display = 'none';
 
-            // Ensure proper card dimensions for 3x5 ratio
             const canvas = await html2canvas(cardElement.querySelector('.scene-card-content'), {
                 backgroundColor: 'white',
                 scale: 2,
-                width: 300,  // 3 inches at 100 DPI
-                height: 180, // 1.8 inches (3x5 ratio adjusted)
+                width: 320,  // Professional card width
+                height: 200, // Professional card height
                 useCORS: true,
                 allowTaint: true
             });
@@ -798,12 +720,13 @@ FADE OUT.`;
             actionsDiv.style.display = '';
             
             canvas.toBlob(async (blob) => {
-                const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`;
+                const sceneNumber = cardElement.querySelector('.card-scene-number').value.replace('#', '');
+                const fileName = `Scene_${sceneNumber}.png`;
                 
                 if (navigator.share) {
                     try {
                         const file = new File([blob], fileName, { type: 'image/png' });
-                        await navigator.share({ title: `Scene #${cardElement.dataset.sceneNumber}`, files: [file] });
+                        await navigator.share({ title: `Scene ${sceneNumber}`, files: [file] });
                     } catch {
                         downloadBlob(blob, fileName);
                     }
@@ -828,36 +751,7 @@ FADE OUT.`;
         URL.revokeObjectURL(url);
     }
 
-    // FIXED: Save All Cards as ZIP
-    async function saveAllCardsAsZip() {
-        if (!window.JSZip) {
-            alert('ZIP library not available.');
-            return;
-        }
-
-        try {
-            const zip = new JSZip();
-            const scenes = extractScenesFromText(fountainInput.value || '');
-
-            scenes.forEach(scene => {
-                const sceneText = `#${scene.number} ${scene.heading}\n\n${scene.description.join('\n')}`;
-                zip.file(`Scene_${scene.number}.txt`, sceneText);
-            });
-
-            const projectInfo = `Project: ${projectData.projectInfo.projectName}\nAuthor: ${projectData.projectInfo.prodName}\nTotal Scenes: ${scenes.length}\nGenerated: ${new Date().toLocaleString()}\n\n@TO SCRIPT - Professional Screenwriting Tool`;
-            zip.file('Project_Info.txt', projectInfo);
-
-            const content = await zip.generateAsync({ type: 'blob' });
-            downloadBlob(content, `${projectData.projectInfo.projectName}_Scene_Cards.zip`);
-            
-            alert(`🎉 Saved ${scenes.length} scene cards as ZIP!`);
-        } catch (error) {
-            console.error('ZIP creation failed:', error);
-            alert('Error creating ZIP file.');
-        }
-    }
-
-    // FIXED: Enhanced PDF Export
+    // FIXED: Enhanced PDF Export with Scene Numbers on Right (Industry Standard)
     async function saveAsPdfWithUnicode() {
         if (typeof window.jspdf === 'undefined') {
             alert('PDF library not loaded. Please try again.');
@@ -872,21 +766,9 @@ FADE OUT.`;
                 format: 'a4'
             });
 
-            // Load Unicode font
-            try {
-                const fontUrl = 'https://fonts.gstatic.com/s/notosans/v36/o-0IIpQlx3QUlC5A4PNr5TRA.ttf';
-                const fontResponse = await fetch(fontUrl);
-                if (fontResponse.ok) {
-                    const fontData = await fontResponse.arrayBuffer();
-                    const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontData)));
-                    doc.addFileToVFS('NotoSans-Regular.ttf', fontBase64);
-                    doc.addFont('NotoSans-Regular.ttf', 'NotoSans', 'normal');
-                    doc.setFont('NotoSans');
-                }
-            } catch (e) {
-                doc.setFont('helvetica');
-            }
-
+            // Set Courier New 12pt font (Industry Standard)
+            doc.setFont('courier');
+            
             const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
             let y = 50;
             const lineHeight = 14;
@@ -903,9 +785,9 @@ FADE OUT.`;
             doc.text(`by ${projectData.projectInfo.prodName || 'Author'}`, pageWidth/2, y, { align: 'center' });
             y += 80;
 
+            // Industry Standard: Courier New 12pt
             doc.setFontSize(12);
 
-            // Content with industry-standard indentation
             elements.forEach(element => {
                 if (element.type === 'title') return;
 
@@ -919,8 +801,11 @@ FADE OUT.`;
                 switch (element.type) {
                     case 'scene_heading':
                         y += lineHeight;
-                        const sceneText = element.sceneNumber && showSceneNumbers ? `${element.sceneNumber}. ${element.text}` : element.text;
-                        doc.text(sceneText, x, y);
+                        // FIXED: Scene number on RIGHT side (Industry Standard)
+                        if (element.sceneNumber && showSceneNumbers) {
+                            doc.text(`${element.sceneNumber}.`, pageWidth - margin - 30, y, { align: 'right' });
+                        }
+                        doc.text(element.text, x, y);
                         break;
                     case 'character':
                         x = margin + 266; // 3.7 inches
@@ -973,7 +858,7 @@ FADE OUT.`;
             });
 
             doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
-            console.log('📄 Enhanced PDF generated');
+            console.log('📄 Industry Standard PDF generated with Courier New 12pt');
             
         } catch (error) {
             console.error('PDF generation failed:', error);
@@ -981,7 +866,7 @@ FADE OUT.`;
         }
     }
 
-    // FIXED: Enhanced File Operations with .filmproj support
+    // Enhanced File Operations
     function saveAsFountain() {
         const text = fountainInput.value || '';
         const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -1001,7 +886,7 @@ FADE OUT.`;
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-    // FIXED: Enhanced File Opening with Multiple Format Support
+    // Enhanced File Opening with Multiple Format Support
     function openFountainFile(e) {
         const file = e.target.files;
         if (!file) return;
@@ -1014,11 +899,9 @@ FADE OUT.`;
                 try {
                     const filmproj = JSON.parse(content);
                     
-                    // Update project info
                     if (filmproj.projectName) projectData.projectInfo.projectName = filmproj.projectName;
                     if (filmproj.author) projectData.projectInfo.prodName = filmproj.author;
                     
-                    // Convert scenes back to fountain format
                     let fountainText = '';
                     if (filmproj.scenes && Array.isArray(filmproj.scenes)) {
                         filmproj.scenes.forEach(scene => {
@@ -1040,7 +923,6 @@ FADE OUT.`;
                     console.error('Error parsing .filmproj:', err);
                 }
             } else {
-                // Handle .fountain and .txt files
                 if (fountainInput) {
                     fountainInput.value = content;
                     clearPlaceholder();
@@ -1052,6 +934,108 @@ FADE OUT.`;
             saveProjectData();
         };
         reader.readAsText(file, 'UTF-8');
+    }
+
+    // Scene number and auto-save indicators
+    function updateSceneNoIndicator() {
+        const indicator = document.getElementById('scene-no-indicator');
+        if (indicator) {
+            indicator.classList.toggle('on', showSceneNumbers);
+            indicator.classList.toggle('off', !showSceneNumbers);
+        }
+    }
+
+    function updateAutoSaveIndicator() {
+        const indicator = document.getElementById('auto-save-indicator');
+        if (indicator) {
+            indicator.classList.toggle('on', !!autoSaveInterval);
+            indicator.classList.toggle('off', !autoSaveInterval);
+        }
+    }
+
+    function toggleSceneNumbers() {
+        showSceneNumbers = !showSceneNumbers;
+        updateSceneNoIndicator();
+        saveProjectData();
+        if (currentView === 'script') renderEnhancedScript();
+    }
+
+    function toggleAutoSave() {
+        if (autoSaveInterval) {
+            clearInterval(autoSaveInterval);
+            autoSaveInterval = null;
+            alert('Auto-save disabled');
+        } else {
+            autoSaveInterval = setInterval(saveProjectData, 120000);
+            alert('Auto-save enabled (every 2 minutes)');
+        }
+        updateAutoSaveIndicator();
+    }
+
+    // Zoom functionality
+    function handleZoomIn() {
+        fontSize = Math.min(32, fontSize + 2);
+        if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
+        console.log(`🔍 Font size: ${fontSize}px`);
+    }
+
+    function handleZoomOut() {
+        fontSize = Math.max(10, fontSize - 2);
+        if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
+        console.log(`🔍 Font size: ${fontSize}px`);
+    }
+
+    // Save All Cards as ZIP
+    async function saveAllCardsAsZip() {
+        if (!window.JSZip) {
+            alert('ZIP library not available.');
+            return;
+        }
+
+        try {
+            const zip = new JSZip();
+            const scenes = extractScenesFromText(fountainInput.value || '');
+
+            scenes.forEach(scene => {
+                const sceneText = `#${scene.number} ${scene.heading}\n\n${scene.description.join('\n')}`;
+                zip.file(`Scene_${scene.number}.txt`, sceneText);
+            });
+
+            const projectInfo = `Project: ${projectData.projectInfo.projectName}\nAuthor: ${projectData.projectInfo.prodName}\nTotal Scenes: ${scenes.length}\nGenerated: ${new Date().toLocaleString()}\n\n@TO SCRIPT - Professional Screenwriting Tool`;
+            zip.file('Project_Info.txt', projectInfo);
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(content, `${projectData.projectInfo.projectName}_Scene_Cards.zip`);
+            
+            alert(`🎉 Saved ${scenes.length} scene cards as ZIP!`);
+        } catch (error) {
+            console.error('ZIP creation failed:', error);
+            alert('Error creating ZIP file.');
+        }
+    }
+
+    // Filter functionality
+    function handleFilterChange() {
+        const selectedValue = filterCategorySelect?.value;
+        
+        if (selectedValue === 'all') {
+            if (filterValueInput) filterValueInput.style.display = 'none';
+            if (filterHelpText) filterHelpText.style.display = 'none';
+        } else {
+            if (filterValueInput) filterValueInput.style.display = 'block';
+            if (filterHelpText) filterHelpText.style.display = 'block';
+            
+            const helpTexts = {
+                'sceneSetting': 'Enter location (e.g., OFFICE, KITCHEN)',
+                'sceneType': 'Enter INT, EXT, or INT./EXT.',
+                'cast': 'Enter character name',
+                'timeOfDay': 'Enter DAY, NIGHT, MORNING, etc.'
+            };
+            
+            if (filterHelpText) filterHelpText.textContent = helpTexts[selectedValue] || 'Enter keywords to filter';
+        }
+        
+        if (filterValueInput) filterValueInput.value = '';
     }
 
     // Modal functions
@@ -1134,14 +1118,13 @@ FADE OUT.`;
             fountainInput.addEventListener('input', () => {
                 history.add(fountainInput.value);
                 saveProjectData();
-                // Sync to cards if in card view
                 if (currentView === 'card') {
                     setTimeout(renderEnhancedCardView, 100);
                 }
             });
         }
 
-        // FIXED: File input with multiple format support
+        // File input with multiple format support
         const fileInput = document.getElementById('file-input');
         if (fileInput) {
             fileInput.accept = '.fountain,.filmproj,.txt';
@@ -1161,7 +1144,6 @@ FADE OUT.`;
             if (btn) {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    console.log(`🔄 ${id} clicked`);
                     switchView(view);
                 });
             }
@@ -1202,7 +1184,7 @@ FADE OUT.`;
             filterCategorySelect.addEventListener('change', handleFilterChange);
         }
 
-        // FIXED: All Menu Items with Enhanced Save Options
+        // All Menu Items with Enhanced Save Options
         const menuHandlers = {
             'new-btn': () => {
                 if (confirm('Are you sure? Unsaved changes will be lost.')) {
@@ -1298,7 +1280,6 @@ FADE OUT.`;
                 const btn = e.target.closest('.edit-card-btn');
                 const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
                 if (sceneId) {
-                    console.log(`✏️ Edit scene: ${sceneId}`);
                     editSceneFromCard(sceneId);
                 }
             }
@@ -1307,7 +1288,6 @@ FADE OUT.`;
                 const btn = e.target.closest('.share-card-btn');
                 const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
                 if (sceneId) {
-                    console.log(`📤 Share scene: ${sceneId}`);
                     shareSceneCard(sceneId);
                 }
             }
@@ -1318,7 +1298,7 @@ FADE OUT.`;
 
     // Initialize Application
     function initialize() {
-        console.log('🎬 Initializing ToscripT Professional...');
+        console.log('🎬 Initializing ToscripT Professional - Industry Standards Compliant');
 
         // Create modals
         createModal('project-info-modal', 'Project Info',
@@ -1341,36 +1321,35 @@ FADE OUT.`;
                 <hr style="border-color: var(--border-color); margin: 2rem 0;">
                 <p><strong>Designed by Thosho Tech</strong></p>
                 <p style="font-size: 0.9rem; color: var(--muted-text-color);">
-                    Empowering scriptwriters worldwide with professional tools.
+                    Professional screenwriting with Courier New 12pt font and industry-standard formatting.
                 </p>
             </div>`
         );
 
         createModal('info-modal', 'Info & Help',
             `<div style="line-height: 1.6;">
-                <h3 style="color: var(--primary-color); margin-top: 0;">📝 Fountain Syntax</h3>
+                <h3 style="color: var(--primary-color); margin-top: 0;">🎞️ Professional Scene Cards</h3>
                 <ul style="padding-left: 1.2rem;">
-                    <li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li>
-                    <li><strong>Character:</strong> Any line in all uppercase.</li>
-                    <li><strong>Dialogue:</strong> Text following a Character.</li>
-                    <li><strong>Parenthetical:</strong> Text in (parentheses).</li>
-                    <li><strong>Transition:</strong> CUT TO:, FADE IN:, etc.</li>
-                </ul>
-                <h3 style="color: var(--primary-color);">🎞️ Editable Scene Cards</h3>
-                <ul style="padding-left: 1.2rem;">
-                    <li><strong>+ Button:</strong> Add new scene cards in card view</li>
-                    <li><strong>Edit in Place:</strong> Click on scene title or description to edit</li>
-                    <li><strong>Scene Numbers:</strong> Display as #1, #2 (right-aligned)</li>
+                    <li><strong>Large Description Area:</strong> Industry-standard size for scene descriptions</li>
+                    <li><strong>Editable Scene Numbers:</strong> Click scene number (#1, #2) to edit</li>
+                    <li><strong>Courier New 12pt:</strong> Professional screenplay font standard</li>
+                    <li><strong>Perfect Export:</strong> Clean 3x5 cards with @TO SCRIPT watermark</li>
                     <li><strong>Drag & Drop:</strong> Reorder scenes and sync with editor</li>
-                    <li><strong>Perfect Export:</strong> 3x5 cards with @TO SCRIPT watermark</li>
-                    <li><strong>Bidirectional Sync:</strong> Changes sync between cards and editor</li>
+                    <li><strong>+ Button:</strong> Add new scenes easily in card view</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">💾 File Support</h3>
+                <h3 style="color: var(--primary-color);">📄 Industry Standard PDF</h3>
+                <ul style="padding-left: 1.2rem;">
+                    <li><strong>Courier New 12pt:</strong> Official screenplay font</li>
+                    <li><strong>Scene Numbers:</strong> Right-aligned as per industry standards</li>
+                    <li><strong>Proper Indentation:</strong> Character at 3.7", Dialogue at 2.5"</li>
+                    <li><strong>Professional Layout:</strong> Industry-compliant margins and spacing</li>
+                </ul>
+                <h3 style="color: var(--primary-color);">💾 Multi-Format Support</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>Open:</strong> .fountain, .filmproj, .txt files</li>
                     <li><strong>Save As:</strong> .fountain, .filmproj, .pdf formats</li>
-                    <li><strong>Share:</strong> Individual scene cards as images</li>
-                    <li><strong>ZIP Export:</strong> All cards as text files</li>
+                    <li><strong>Share:</strong> Professional scene cards as images</li>
+                    <li><strong>ZIP Export:</strong> All cards organized in ZIP file</li>
                 </ul>
             </div>`
         );
@@ -1389,11 +1368,11 @@ FADE OUT.`;
 
         history.add(fountainInput ? fountainInput.value : '');
 
-        console.log('✅ ToscripT Professional initialized successfully!');
-        console.log('🎯 All features working: Editable cards, perfect export, file support');
-        console.log('🎞️ Professional 3x5 cards with bidirectional sync');
-        console.log('💾 Multi-format support: .fountain, .filmproj, .txt, .pdf');
-        console.log('🌍 Ready to revolutionize screenwriting! 🎬');
+        console.log('✅ ToscripT Professional initialized with industry standards!');
+        console.log('🎞️ Large description areas, editable scene numbers, perfect formatting');
+        console.log('📄 Courier New 12pt font, scene numbers on right in PDF');
+        console.log('💾 Multi-format file support: .fountain, .filmproj, .txt, .pdf');
+        console.log('🌍 Professional screenwriting tool ready for filmmakers worldwide! 🎬');
     }
 
     // Start the application
