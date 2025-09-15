@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ToscripT - Screenwriting</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,10 +14,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" defer></script>
-    <script src="https://cdn.jsdelivr.net/npm/fountain-js/index.min.js" defer></script>
 </head>
 <body>
-    <header id="main-header" class="page-header">
+    <!-- Write Mode Header -->
+    <header id="main-header" class="page-header write-mode-header">
         <div class="header-left">
             <button id="hamburger-btn" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
         </div>
@@ -29,13 +29,13 @@
         </div>
     </header>
     
-    <!-- Script view header (shown only in script view) -->
-    <header id="script-header" class="page-header script-only-header" style="display: none;">
+    <!-- Script Preview Mode Header -->
+    <header id="script-header" class="page-header script-mode-header" style="display: none;">
         <div class="header-left">
             <button id="hamburger-btn-script" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
         </div>
         <div class="header-center">
-            <button id="show-write-btn" class="main-action-btn header-btn wide-btn">TO WRITE</button>
+            <button id="show-write-btn-header" class="main-action-btn header-btn wide-btn">TO WRITE</button>
         </div>
         <div class="header-right">
             <button id="scene-navigator-btn-script" class="icon-btn" title="Scene Navigator & Filters"><i class="fas fa-layer-group"></i></button>
@@ -92,17 +92,6 @@
                     <button class="action-btn" data-action="transition" title="Cycle Transition">TO:</button>
                 </div>
             </div>
-            
-            <!-- Fixed Mobile Toolbar -->
-            <div class="mobile-fixed-toolbar">
-                <div class="mobile-action-buttons">
-                    <button class="mobile-action-btn" data-action="scene">I/E</button>
-                    <button class="mobile-action-btn" data-action="time">D/N</button>
-                    <button class="mobile-action-btn" data-action="caps">Aa</button>
-                    <button class="mobile-action-btn" data-action="parens">()</button>
-                    <button class="mobile-action-btn" data-action="transition">TO:</button>
-                </div>
-            </div>
         </div>
         
         <div id="script-view" class="view">
@@ -114,6 +103,17 @@
              <div class="bottom-bar"><button id="show-write-btn-from-card" class="main-action-btn secondary">TO WRITE</button></div>
         </div>
     </main>
+    
+    <!-- Mobile Fixed Toolbar - Only shown in write mode -->
+    <div id="mobile-fixed-toolbar" class="mobile-fixed-toolbar">
+        <div class="mobile-action-buttons">
+            <button class="mobile-action-btn" data-action="scene">I/E</button>
+            <button class="mobile-action-btn" data-action="time">D/N</button>
+            <button class="mobile-action-btn" data-action="caps">Aa</button>
+            <button class="mobile-action-btn" data-action="parens">()</button>
+            <button class="mobile-action-btn" data-action="transition">TO:</button>
+        </div>
+    </div>
     
     <div id="scene-navigator-panel" class="side-panel">
         <div class="panel-header">
