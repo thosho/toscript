@@ -117,14 +117,14 @@
         </div>
     </main>
 
-    <!-- Professional Mobile Keyboard Accessory Toolbar -->
-    <div id="mobile-keyboard-accessory" class="mobile-keyboard-accessory">
-        <div class="keyboard-accessory-content">
-            <button class="keyboard-accessory-btn" data-action="scene">I/E</button>
-            <button class="keyboard-accessory-btn" data-action="time">D/N</button>
-            <button class="keyboard-accessory-btn" data-action="caps">Aa</button>
-            <button class="keyboard-accessory-btn" data-action="parens">()</button>
-            <button class="keyboard-accessory-btn" data-action="transition">TO:</button>
+    <!-- FIXED: Professional Mobile Keyboard Toolbar (Research-Based) -->
+    <div id="mobile-keyboard-toolbar" class="mobile-keyboard-toolbar">
+        <div class="keyboard-toolbar-content">
+            <button class="keyboard-btn" data-action="scene">I/E</button>
+            <button class="keyboard-btn" data-action="time">D/N</button>
+            <button class="keyboard-btn" data-action="caps">Aa</button>
+            <button class="keyboard-btn" data-action="parens">()</button>
+            <button class="keyboard-btn" data-action="transition">TO:</button>
         </div>
     </div>
     
@@ -135,8 +135,15 @@
         </div>
         <div class="panel-section">
             <h4>Filter Script</h4>
-            <select id="filter-category-select"><option value="all">Show All Scenes</option><option value="sceneSetting">Scene Setting</option><option value="sceneType">INT./EXT.</option><option value="cast">Character</option></select>
+            <select id="filter-category-select">
+                <option value="all">Show All Scenes</option>
+                <option value="sceneSetting">Scene Setting</option>
+                <option value="sceneType">INT./EXT.</option> 
+                <option value="cast">Character</option>
+                <option value="timeOfDay">Time of Day</option>
+            </select>
             <input type="text" id="filter-value-input" placeholder="Type to filter..." style="display: none;">
+            <div class="panel-subtext" id="filter-help-text" style="display: none;">Enter keywords to filter scenes</div>
         </div>
         <div class="panel-section">
             <h4>Reorder Scenes</h4>
