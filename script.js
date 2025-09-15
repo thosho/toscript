@@ -60,28 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
         safeAddListener('card-view-btn', 'click', () => switchView('card'));
         safeAddListener('hamburger-btn', 'click', (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); });
-        
-        // --- THIS BLOCK IS THE FIX ---
-        // It replaces your original single-line document click listener.
-        // This safe version checks if the panels exist before reading their classList, preventing a crash.
-        // It also adds the "click outside" logic for BOTH side panels.
-        document.addEventListener('click', (e) => {
-            // Check and close the main menu panel
-            if (menuPanel && menuPanel.classList.contains('open') && 
-                !menuPanel.contains(e.target) && 
-                !e.target.closest('#hamburger-btn')) {
-                    menuPanel.classList.remove('open');
-            }
-
-            // Check and close the scene navigator panel
-            if (sceneNavigatorPanel && sceneNavigatorPanel.classList.contains('open') && 
-                !sceneNavigatorPanel.contains(e.target) && 
-                !e.target.closest('#scene-navigator-btn')) {
-                    sceneNavigatorPanel.classList.remove('open');
-            }
-        });
-        // --- END OF FIX BLOCK ---
-
+        document.addEventListener('click', (e) => { if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && !e.target.closest('#hamburger-btn')) { menuPanel.classList.remove('open'); } });
         safeAddListener('zoom-in-btn', 'click', () => { fontSize = Math.min(32, fontSize + 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('zoom-out-btn', 'click', () => { fontSize = Math.max(10, fontSize - 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('scene-no-btn', 'click', toggleSceneNumbers);
@@ -250,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     createModalHTML('project-info-modal', 'Project Info', `<div class="form-group"><label for="prod-name-input">Production Name / Title</label><input type="text" id="prod-name-input"></div><div class="form-group"><label for="director-name-input">Author / Writer</label><input type="text" id="director-name-input"></div>`, `<button id="save-project-info-btn" class="main-action-btn">Save</button>`);
     createModalHTML('about-modal', 'About ToscripT', `<p style="text-align: center;">Designed by Thosho Tech</p>`, '');
+    createModalHTML('about-modal', 'About ToscripT', `<p style="text-align: center;">Designed by Thosho Tech</p>`, '');
     createModalHTML('info-modal', 'Info & Help', `<h3>Fountain Syntax</h3><ul><li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li><li><strong>Character:</strong> Any line in all uppercase.</li><li><strong>Dialogue:</strong> Text following a Character.</li></ul><h3>Button Guide</h3><ul><li><strong>Aa:</strong> Toggles current line to UPPERCASE.</li><li><strong>():</strong> Wraps selected text in parentheses.</li></ul>`, '');
     createModalHTML('title-page-modal', 'Title Page', `<div class="form-group"><label for="title-input">Title</label><input type="text" id="title-input"></div><div class="form-group"><label for="author-input">Author</label><input type="text" id="author-input"></div>`, `<button id="save-title-btn" class="main-action-btn">Save</button>`);
     
@@ -259,10 +239,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleAutoSave() { const indicator = document.getElementById('auto-save-indicator'); if (autoSaveInterval) { clearInterval(autoSaveInterval); autoSaveInterval = null; indicator.classList.add('off'); indicator.classList.remove('on'); alert('Auto-save disabled.'); } else { autoSaveInterval = setInterval(saveProjectData, 120000); indicator.classList.add('on'); indicator.classList.remove('off'); alert('Auto-save enabled (every 2 minutes).'); } }
     function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
     
-    // Initialize the application
-    setupEventListeners();
-    loadProjectData();
-    setPlaceholder();
-    history.updateButtons();
+       // Initialize the application
+
+setupEventListeners();
+
+loadProjectData();
+
+setPlaceholder();
+
+history.updateButtons();
+
 
 });
