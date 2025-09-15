@@ -896,10 +896,215 @@ body.fullscreen-active .main-content {
         gap: 1rem;
     }
     
+    /* FIXED: Professional 3x5 Scene Cards with Industry Standards */
+.scene-card { 
+    background-color: white;
+    color: black;
+    border: 2px solid #ddd; 
+    border-radius: 8px; 
+    padding: 25px; /* Increased padding for better spacing */
+    display: flex; 
+    flex-direction: column; 
+    position: relative;
+    cursor: grab;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* Perfect 3x5 card proportions */
+    width: 320px;  /* Increased width */
+    height: 200px; /* Increased height */
+    font-family: 'Courier New', 'Courier Prime', monospace;
+    font-size: 12px; /* Industry standard 12pt */
+    line-height: 1.4;
+    box-sizing: border-box;
+    /* Equal spacing on all sides */
+    margin: 15px;
+}
+
+.scene-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    border-color: var(--primary-color);
+}
+
+.scene-card.dragging {
+    opacity: 0.7;
+    transform: rotate(2deg);
+    z-index: 1000;
+}
+
+.scene-card-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0; /* Remove extra padding */
+}
+
+.card-header { 
+    display: flex; 
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    position: relative;
+}
+
+/* FIXED: Scene title on left, proper size */
+.card-scene-title {
+    flex-grow: 1;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-family: 'Courier New', 'Courier Prime', monospace;
+    font-size: 12px; /* Industry standard */
+    line-height: 1.3;
+    padding: 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    min-height: 24px;
+    outline: none;
+    background: transparent;
+    margin-right: 60px; /* Space for scene number */
+}
+
+.card-scene-title:focus {
+    border-color: var(--primary-color);
+    background-color: #f8f8f8;
+}
+
+.card-scene-title[contenteditable="true"]:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    font-style: italic;
+}
+
+/* FIXED: Editable Scene number on right */
+.card-scene-number {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-family: 'Courier New', 'Courier Prime', monospace;
+    font-size: 12px;
+    font-weight: bold;
+    color: #444;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 40px;
+    text-align: center;
+    cursor: text;
+}
+
+.card-scene-number:focus {
+    border-color: var(--primary-color);
+    background-color: #f8f8f8;
+    outline: none;
+}
+
+.card-body { 
+    flex-grow: 1; 
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* FIXED: Much Larger Description textarea - Industry Standard Size */
+.card-description {
+    width: 100%;
+    height: 120px; /* Much larger - was too small before */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Courier New', 'Courier Prime', monospace;
+    font-size: 12px; /* Industry standard 12pt */
+    line-height: 1.4;
+    resize: vertical; /* Allow user to resize if needed */
+    outline: none;
+    background: transparent;
+    box-sizing: border-box;
+    flex-grow: 1;
+}
+
+.card-description:focus {
+    border-color: var(--primary-color);
+    background-color: #f8f8f8;
+}
+
+.card-description::placeholder {
+    color: #999;
+    font-style: italic;
+    font-family: 'Courier New', 'Courier Prime', monospace;
+}
+
+/* FIXED: Watermark positioning - bottom left */
+.card-watermark {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    font-size: 7px;
+    color: #bbb;
+    opacity: 0.4;
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Action buttons - hidden during export */
+.card-actions { 
+    display: flex; 
+    justify-content: flex-end; 
+    gap: 0.25rem; 
+    position: absolute;
+    top: 8px;
+    right: 50px; /* Moved left to avoid scene number */
+    background: rgba(255, 255, 255, 0.95);
+    padding: 0.25rem;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.scene-card:hover .card-actions {
+    opacity: 1;
+}
+
+.card-actions .icon-btn {
+    font-size: 0.7rem;
+    padding: 0.25rem;
+    min-width: 24px;
+    min-height: 24px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 4px;
+    border: none;
+}
+
+.card-actions .icon-btn:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Card container with proper spacing */
+#card-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    justify-items: center;
+}
+
+/* Mobile responsive cards */
+@media (max-width: 768px) {
     .scene-card {
         width: 100%;
-        max-width: 300px;
-        margin: 0 auto;
+        max-width: 320px;
+        margin: 10px auto;
+    }
+    
+    .card-description {
+        height: 100px; /* Slightly smaller on mobile but still usable */
     }
     
     .card-actions {
@@ -910,38 +1115,10 @@ body.fullscreen-active .main-content {
         padding: 0;
         justify-content: center;
     }
-}
-
-/* iOS/Safari specific keyboard fixes */
-@supports (-webkit-touch-callout: none) {
-    .mobile-keyboard-toolbar {
-        /* Additional iOS-specific positioning */
-        bottom: max(env(keyboard-inset-height, 0px), env(safe-area-inset-bottom, 0px));
+    
+    #card-container {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
     }
-}
-
-/* Scrollbar Styles */
-textarea::-webkit-scrollbar, 
-#screenplay-output::-webkit-scrollbar, 
-#scene-list::-webkit-scrollbar, 
-.card-body::-webkit-scrollbar,
-.modal-body::-webkit-scrollbar { 
-    width: 8px; 
-}
-
-textarea::-webkit-scrollbar-track, 
-#screenplay-output::-webkit-scrollbar-track, 
-#scene-list::-webkit-scrollbar-track, 
-.card-body::-webkit-scrollbar-track,
-.modal-body::-webkit-scrollbar-track { 
-    background: transparent; 
-}
-
-textarea::-webkit-scrollbar-thumb, 
-#screenplay-output::-webkit-scrollbar-thumb, 
-#scene-list::-webkit-scrollbar-thumb, 
-.card-body::-webkit-scrollbar-thumb,
-.modal-body::-webkit-scrollbar-thumb { 
-    background-color: var(--border-color); 
-    border-radius: 20px; 
 }
