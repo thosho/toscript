@@ -499,9 +499,6 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                     <div class="card-watermark">@TO SCRIPT</div>
                 </div>
                 <div class="card-actions">
-                    <button class="icon-btn edit-card-btn" title="Edit Scene" data-scene-id="${scene.sceneId}">
-                        <i class="fas fa-edit"></i>
-                    </button>
                     <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="${scene.sceneId}">
                         <i class="fas fa-share-alt"></i>
                     </button>
@@ -570,10 +567,7 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
                     </div>
                     <div class="card-watermark">@TO SCRIPT</div>
                 </div>
-                <div class="card-actions">
-                    <button class="icon-btn edit-card-btn" title="Edit Scene" data-scene-id="scene_${newSceneNumber}">
-                        <i class="fas fa-edit"></i>
-                    </button>
+                <div class="card-actions"
                     <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="scene_${newSceneNumber}">
                         <i class="fas fa-share-alt"></i>
                     </button>
@@ -1363,14 +1357,6 @@ Special Notes:" data-scene-id="${scene.sceneId}">${scene.description.join('\n\n'
             }
 
             if (e.target.id === 'save-project-info-btn') handleSaveProjectInfo();
-
-            if (e.target.closest('.edit-card-btn')) {
-                const btn = e.target.closest('.edit-card-btn');
-                const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
-                if (sceneId) {
-                    editSceneFromCard(sceneId);
-                }
-            }
 
             if (e.target.closest('.share-card-btn')) {
                 const btn = e.target.closest('.share-card-btn');
