@@ -60,7 +60,28 @@ document.addEventListener('DOMContentLoaded', () => {
         safeAddListener('show-write-btn-from-card', 'click', () => switchView('write'));
         safeAddListener('card-view-btn', 'click', () => switchView('card'));
         safeAddListener('hamburger-btn', 'click', (e) => { e.stopPropagation(); menuPanel.classList.toggle('open'); });
-        document.addEventListener('click', (e) => { if (menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && !e.target.closest('#hamburger-btn')) { menuPanel.classList.remove('open'); } });
+        
+        // --- THIS BLOCK IS THE FIX ---
+        // It replaces your original single-line document click listener.
+        // This safe version checks if the panels exist before reading their classList, preventing a crash.
+        // It also adds the "click outside" logic for BOTH side panels.
+        document.addEventListener('click', (e) => {
+            // Check and close the main menu panel
+            if (menuPanel && menuPanel.classList.contains('open') && 
+                !menuPanel.contains(e.target) && 
+                !e.target.closest('#hamburger-btn')) {
+                    menuPanel.classList.remove('open');
+            }
+
+            // Check and close the scene navigator panel
+            if (sceneNavigatorPanel && sceneNavigatorPanel.classList.contains('open') && 
+                !sceneNavigatorPanel.contains(e.target) && 
+                !e.target.closest('#scene-navigator-btn')) {
+                    sceneNavigatorPanel.classList.remove('open');
+            }
+        });
+        // --- END OF FIX BLOCK ---
+
         safeAddListener('zoom-in-btn', 'click', () => { fontSize = Math.min(32, fontSize + 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('zoom-out-btn', 'click', () => { fontSize = Math.max(10, fontSize - 2); fountainInput.style.fontSize = `${fontSize}px`; });
         safeAddListener('scene-no-btn', 'click', toggleSceneNumbers);
@@ -239,9 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateSceneNavigator() { const output = fountain.parse(fountainInput.value); sceneList.innerHTML = output.tokens.filter(t => t.type === 'scene_heading').map((token) => `<li data-line="${token.line}">${token.text}</li>`).join(''); new Sortable(sceneList, { animation: 150, ghostClass: 'dragging', onEnd: (evt) => { /* Reordering logic can be enhanced here */ } }); }
     
     // Initialize the application
-setupEventListeners();
-loadProjectData();
-setPlaceholder();
-history.updateButtons();
+    setupEventListeners();
+    loadProjectData();
+    setPlaceholder();
+    history.updateButtons();
 
 });
