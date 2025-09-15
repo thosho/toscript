@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("ToscripT Starting...");
+    console.log("ToscripT Initializing for Filmmakers Worldwide 🎬");
     
     // Global variables
     let projectData = { projectInfo: { projectName: "Untitled", prodName: "Author", scriptContent: "" } };
@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let showSceneNumbers = true;
     let currentView = 'write';
     let isKeyboardOpen = false;
+    let keyboardHeight = 0;
 
     // DOM elements
     const fountainInput = document.getElementById('fountain-input');
@@ -19,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cardView = document.getElementById('card-view');
     const mainHeader = document.getElementById('main-header');
     const scriptHeader = document.getElementById('script-header');
-    const mobileToolbar = document.getElementById('mobile-fixed-toolbar');
+    const cardHeader = document.getElementById('card-header');
+    const mobileToolbar = document.getElementById('mobile-keyboard-toolbar');
 
     const placeholderText = `TITLE: THE CRIMSON DOSSIER
 AUTHOR: YOUR NAME
@@ -84,48 +86,98 @@ FADE OUT.`;
         }
     };
 
-    // Mobile keyboard detection and toolbar positioning
-    function setupMobileKeyboard() {
+    // Enhanced Mobile Keyboard Detection - Like in your reference image
+    function setupAdvancedKeyboardDetection() {
         let initialViewportHeight = window.innerHeight;
+        let previousHeight = initialViewportHeight;
         
-        function handleViewportChange() {
+        function handleKeyboardChange() {
             const currentHeight = window.innerHeight;
             const heightDifference = initialViewportHeight - currentHeight;
+            const wasKeyboardOpen = isKeyboardOpen;
             
-            isKeyboardOpen = heightDifference > 150; // Keyboard is open if height reduced by more than 150px
+            // Detect keyboard open (height reduced by more than 150px indicates keyboard)
+            isKeyboardOpen = heightDifference > 150;
+            keyboardHeight = isKeyboardOpen ? heightDifference : 0;
             
-            if (mobileToolbar && currentView === 'write') {
-                if (isKeyboardOpen) {
-                    // Position toolbar above keyboard
-                    mobileToolbar.style.position = 'fixed';
-                    mobileToolbar.style.bottom = '0px';
-                    mobileToolbar.style.zIndex = '9999';
-                    mobileToolbar.style.transform = 'translateY(0)';
-                } else {
-                    // Normal position when keyboard is closed
-                    mobileToolbar.style.position = 'fixed';
-                    mobileToolbar.style.bottom = '0px';
-                    mobileToolbar.style.zIndex = '100';
-                    mobileToolbar.style.transform = 'translateY(0)';
-                }
+            if (isKeyboardOpen !== wasKeyboardOpen) {
+                updateMobileToolbarPosition();
             }
+            
+            previousHeight = currentHeight;
         }
 
-        // Use Visual Viewport API if available (modern browsers)
+        // Modern browsers - Visual Viewport API
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleViewportChange);
+            window.visualViewport.addEventListener('resize', handleKeyboardChange);
+            console.log('Using Visual Viewport API for keyboard detection');
         } else {
             // Fallback for older browsers
-            window.addEventListener('resize', handleViewportChange);
+            window.addEventListener('resize', handleKeyboardChange);
+            console.log('Using resize fallback for keyboard detection');
         }
 
-        // Also handle orientation change
+        // Handle orientation changes
         window.addEventListener('orientationchange', () => {
             setTimeout(() => {
                 initialViewportHeight = window.innerHeight;
-                handleViewportChange();
+                handleKeyboardChange();
             }, 500);
         });
+
+        // Enhanced focus/blur detection
+        if (fountainInput) {
+            fountainInput.addEventListener('focus', () => {
+                setTimeout(() => {
+                    document.body.classList.add('keyboard-open');
+                    showMobileToolbar();
+                }, 300);
+            });
+
+            fountainInput.addEventListener('blur', () => {
+                setTimeout(() => {
+                    document.body.classList.remove('keyboard-open');
+                    if (!isKeyboardOpen) {
+                        hideMobileToolbar();
+                    }
+                }, 100);
+            });
+        }
+    }
+
+    function updateMobileToolbarPosition() {
+        if (!mobileToolbar || window.innerWidth > 768) return;
+        
+        if (isKeyboardOpen && currentView === 'write') {
+            showMobileToolbar();
+        } else {
+            hideMobileToolbar();
+        }
+    }
+
+    function showMobileToolbar() {
+        if (mobileToolbar && window.innerWidth <= 768 && currentView === 'write') {
+            mobileToolbar.classList.add('show');
+            mobileToolbar.style.display = 'block';
+            mobileToolbar.style.opacity = '1';
+            mobileToolbar.style.visibility = 'visible';
+            mobileToolbar.style.transform = 'translateY(0)';
+            console.log('Mobile toolbar shown above keyboard');
+        }
+    }
+
+    function hideMobileToolbar() {
+        if (mobileToolbar) {
+            mobileToolbar.classList.remove('show');
+            mobileToolbar.style.opacity = '0';
+            mobileToolbar.style.visibility = 'hidden';
+            mobileToolbar.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                if (!mobileToolbar.classList.contains('show')) {
+                    mobileToolbar.style.display = 'none';
+                }
+            }, 300);
+        }
     }
 
     // Placeholder functions
@@ -169,46 +221,51 @@ FADE OUT.`;
         updateAutoSaveIndicator();
     }
 
-    // View switching with proper header management
+    // Enhanced View Switching with Proper Headers
     function switchView(view) {
-        console.log('Switching to view:', view);
+        console.log(`Switching to ${view} view`);
         currentView = view;
 
-        // Hide all views
+        // Hide all views and headers
         [writeView, scriptView, cardView].forEach(v => {
             if (v) v.classList.remove('active');
         });
+        [mainHeader, scriptHeader, cardHeader].forEach(h => {
+            if (h) h.style.display = 'none';
+        });
+
+        // Hide mobile toolbar by default
+        hideMobileToolbar();
 
         if (view === 'script') {
             if (scriptView) {
-                renderScript();
+                renderEnhancedScript();
                 scriptView.classList.add('active');
             }
-            // Show script header, hide main header
-            if (mainHeader) mainHeader.style.display = 'none';
             if (scriptHeader) scriptHeader.style.display = 'flex';
-            // Hide mobile toolbar
-            if (mobileToolbar) mobileToolbar.style.display = 'none';
         } else if (view === 'card') {
             if (cardView) {
-                renderCardView();
+                renderEnhancedCardView();
                 cardView.classList.add('active');
             }
-            if (mainHeader) mainHeader.style.display = 'flex';
-            if (scriptHeader) scriptHeader.style.display = 'none';
-            if (mobileToolbar) mobileToolbar.style.display = 'none';
+            if (cardHeader) cardHeader.style.display = 'flex';
         } else {
             // write view
             if (writeView) writeView.classList.add('active');
             if (mainHeader) mainHeader.style.display = 'flex';
-            if (scriptHeader) scriptHeader.style.display = 'none';
-            // Show mobile toolbar on mobile
-            if (mobileToolbar && window.innerWidth <= 768) {
-                mobileToolbar.style.display = 'block';
+            
+            // Show mobile toolbar on mobile in write view
+            if (window.innerWidth <= 768) {
+                setTimeout(() => {
+                    if (fountainInput && document.activeElement === fountainInput) {
+                        showMobileToolbar();
+                    }
+                }, 100);
             }
+            
             setTimeout(() => {
                 if (fountainInput) fountainInput.focus();
-            }, 100);
+            }, 200);
         }
     }
 
@@ -244,8 +301,9 @@ FADE OUT.`;
         updateSceneNoIndicator();
         saveProjectData();
         if (currentView === 'script') {
-            renderScript();
+            renderEnhancedScript();
         }
+        console.log(`Scene numbers ${showSceneNumbers ? 'enabled' : 'disabled'}`);
     }
 
     function toggleAutoSave() {
@@ -260,69 +318,186 @@ FADE OUT.`;
         updateAutoSaveIndicator();
     }
 
-    // Render functions
-    function renderScript() {
-        if (!screenplayOutput || !fountainInput) return;
-
-        const text = fountainInput.value || '';
+    // Industry Standard Screenplay Formatting Engine
+    function parseScriptWithIndustryStandards(text) {
         const lines = text.split('\n');
-        let scriptHtml = '';
+        const elements = [];
         let sceneCount = 0;
 
-        // Title page
-        scriptHtml += `<div class="title-page">
-            <h1>${projectData.projectInfo.projectName || 'Untitled'}</h1>
-            <p class="author">by ${projectData.projectInfo.prodName || 'Author'}</p>
-        </div>`;
-
-        lines.forEach(line => {
+        lines.forEach((line, index) => {
             const trimmed = line.trim();
+            const original = line;
+            
             if (trimmed.length === 0) {
-                scriptHtml += '<br>';
+                elements.push({ type: 'empty', text: '', original });
                 return;
             }
 
-            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+            // Title page elements (at the beginning)
+            if (index < 10 && (trimmed.startsWith('TITLE:') || trimmed.startsWith('AUTHOR:'))) {
+                elements.push({ 
+                    type: 'title', 
+                    text: trimmed.replace(/^(TITLE:|AUTHOR:)\s*/, ''), 
+                    original,
+                    prefix: trimmed.startsWith('TITLE:') ? 'TITLE:' : 'AUTHOR:'
+                });
+                return;
+            }
+
+            // Scene headings - Must start with INT., EXT., or INT./EXT.
+            if (/^(INT\.?\/EXT\.?|INT\.|EXT\.)\s+/i.test(trimmed)) {
                 sceneCount++;
-                const sceneNum = showSceneNumbers ? `${sceneCount}. ` : '';
-                scriptHtml += `<h3 class="scene-heading">${sceneNum}${trimmed}</h3>`;
-            } else if (trimmed === trimmed.toUpperCase() && trimmed.length > 0 && !trimmed.includes('.') && trimmed.length < 50) {
-                scriptHtml += `<div class="character">${trimmed}</div>`;
-            } else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
-                scriptHtml += `<div class="parenthetical">${trimmed}</div>`;
-            } else if (/^(CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)/.test(trimmed)) {
-                scriptHtml += `<div class="transition">${trimmed}</div>`;
+                const sceneNumber = showSceneNumbers ? sceneCount : null;
+                elements.push({ 
+                    type: 'scene_heading', 
+                    text: trimmed.toUpperCase(), 
+                    original,
+                    sceneNumber
+                });
+                return;
+            }
+
+            // Transitions - All caps, ends with TO:, or specific transition words
+            if (/^(CUT TO:|DISSOLVE TO:|FADE TO BLACK\.|FADE OUT\.|FADE IN:|SMASH CUT TO:|MATCH CUT TO:|JUMP CUT TO:)$/i.test(trimmed) ||
+                (trimmed === trimmed.toUpperCase() && trimmed.endsWith('TO:') && trimmed.length < 20)) {
+                elements.push({ type: 'transition', text: trimmed.toUpperCase(), original });
+                return;
+            }
+
+            // Character names - All caps, centered, less than 50 chars, not a scene heading
+            if (trimmed === trimmed.toUpperCase() && 
+                trimmed.length > 0 && 
+                trimmed.length < 50 && 
+                !trimmed.includes('.') && 
+                !trimmed.endsWith(':') &&
+                !/^(FADE|CUT|DISSOLVE|SMASH|MATCH|JUMP)/.test(trimmed)) {
+                
+                // Check if next non-empty line could be dialogue
+                let nextIndex = index + 1;
+                while (nextIndex < lines.length && lines[nextIndex].trim() === '') nextIndex++;
+                if (nextIndex < lines.length) {
+                    const nextLine = lines[nextIndex].trim();
+                    // If next line is not a scene heading, transition, or another character, this is likely a character
+                    if (!(/^(INT\.?\/EXT\.?|INT\.|EXT\.)\s+/i.test(nextLine)) &&
+                        !(nextLine === nextLine.toUpperCase() && nextLine.endsWith('TO:')) &&
+                        !(nextLine === nextLine.toUpperCase() && nextLine.length < 50 && !nextLine.includes('.'))) {
+                        elements.push({ type: 'character', text: trimmed, original });
+                        return;
+                    }
+                }
+            }
+
+            // Parentheticals - Enclosed in parentheses
+            if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
+                elements.push({ type: 'parenthetical', text: trimmed, original });
+                return;
+            }
+
+            // Everything else is action/description
+            elements.push({ type: 'action', text: trimmed, original });
+        });
+
+        return elements;
+    }
+
+    // Enhanced Script Rendering with Industry Standards
+    function renderEnhancedScript() {
+        if (!screenplayOutput || !fountainInput) return;
+
+        const text = fountainInput.value || '';
+        const elements = parseScriptWithIndustryStandards(text);
+        let scriptHtml = '';
+        let hasTitlePage = false;
+
+        // Check for title page elements
+        const titleElements = elements.filter(el => el.type === 'title');
+        if (titleElements.length > 0) {
+            hasTitlePage = true;
+            scriptHtml += '<div class="title-page">';
+            
+            const titleEl = titleElements.find(el => el.prefix === 'TITLE:');
+            const authorEl = titleElements.find(el => el.prefix === 'AUTHOR:');
+            
+            if (titleEl) {
+                scriptHtml += `<h1>${titleEl.text || projectData.projectInfo.projectName || 'Untitled'}</h1>`;
             } else {
-                scriptHtml += `<div class="action">${trimmed}</div>`;
+                scriptHtml += `<h1>${projectData.projectInfo.projectName || 'Untitled'}</h1>`;
+            }
+            
+            if (authorEl) {
+                scriptHtml += `<p class="author">by ${authorEl.text}</p>`;
+            } else {
+                scriptHtml += `<p class="author">by ${projectData.projectInfo.prodName || 'Author'}</p>`;
+            }
+            
+            scriptHtml += '</div>';
+        } else {
+            // Default title page
+            scriptHtml += `<div class="title-page">
+                <h1>${projectData.projectInfo.projectName || 'Untitled'}</h1>
+                <p class="author">by ${projectData.projectInfo.prodName || 'Author'}</p>
+            </div>`;
+        }
+
+        // Render script elements
+        elements.forEach(element => {
+            if (element.type === 'title') return; // Skip, already handled in title page
+
+            switch (element.type) {
+                case 'empty':
+                    scriptHtml += '<br>';
+                    break;
+                case 'scene_heading':
+                    const sceneNum = element.sceneNumber ? `${element.sceneNumber}. ` : '';
+                    scriptHtml += `<div class="scene-heading">${sceneNum}${element.text}</div>`;
+                    break;
+                case 'character':
+                    scriptHtml += `<div class="character">${element.text}</div>`;
+                    break;
+                case 'dialogue':
+                    scriptHtml += `<div class="dialogue">${element.text}</div>`;
+                    break;
+                case 'parenthetical':
+                    scriptHtml += `<div class="parenthetical">${element.text}</div>`;
+                    break;
+                case 'transition':
+                    scriptHtml += `<div class="transition">${element.text}</div>`;
+                    break;
+                default: // action
+                    if (element.text) {
+                        scriptHtml += `<div class="action">${element.text}</div>`;
+                    }
             }
         });
 
         screenplayOutput.innerHTML = scriptHtml;
     }
 
-    function renderCardView() {
+    // Enhanced Card View with Better Export
+    function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer || !fountainInput) return;
 
         const text = fountainInput.value || '';
-        const lines = text.split('\n');
+        const elements = parseScriptWithIndustryStandards(text);
         const scenes = [];
         let currentScene = null;
         let sceneNumber = 0;
 
-        lines.forEach(line => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+        elements.forEach(element => {
+            if (element.type === 'scene_heading') {
                 if (currentScene) scenes.push(currentScene);
                 sceneNumber++;
                 currentScene = {
                     sceneId: `scene_${sceneNumber}`,
                     sceneNumber: sceneNumber,
-                    heading: trimmed,
-                    content: ''
+                    heading: element.text,
+                    content: [],
+                    elements: []
                 };
-            } else if (currentScene && trimmed) {
-                currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
+            } else if (currentScene && element.text && element.type !== 'title' && element.type !== 'empty') {
+                currentScene.content.push(element.text);
+                currentScene.elements.push(element);
             }
         });
 
@@ -330,7 +505,7 @@ FADE OUT.`;
 
         if (scenes.length === 0) {
             cardContainer.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: var(--muted-text-color);">
+                <div style="text-align: center; padding: 3rem; color: var(--muted-text-color); grid-column: 1 / -1;">
                     <i class="fas fa-film" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
                     <p>No scenes found to display as cards.</p>
                     <p style="font-size: 0.9rem;">Start writing your screenplay to see scene cards here.</p>
@@ -340,8 +515,10 @@ FADE OUT.`;
 
         cardContainer.innerHTML = scenes.map(scene =>
             `<div class="scene-card" data-scene-id="${scene.sceneId}" data-scene-number="${scene.sceneNumber}">
-                <div class="card-header">#${scene.sceneNumber} ${scene.heading}</div>
-                <div class="card-body">${scene.content}</div>
+                <div class="scene-card-content">
+                    <div class="card-header">#${scene.sceneNumber} ${scene.heading}</div>
+                    <div class="card-body">${scene.content.join('\n')}</div>
+                </div>
                 <div class="card-actions">
                     <button class="icon-btn edit-card-btn" title="Edit Scene" data-scene-id="${scene.sceneId}">
                         <i class="fas fa-edit"></i>
@@ -353,19 +530,10 @@ FADE OUT.`;
             </div>`
         ).join('');
 
-        // Add Save All Cards button to card view bottom bar
-        const cardViewBottomBar = cardView.querySelector('.bottom-bar');
-        if (cardViewBottomBar) {
-            cardViewBottomBar.innerHTML = `
-                <button id="show-write-btn-from-card" class="main-action-btn secondary">TO WRITE</button>
-                <button id="save-all-cards-btn" class="main-action-btn" style="margin-left: 1rem;">
-                    <i class="fas fa-download"></i> SAVE ALL CARDS
-                </button>
-            `;
-        }
+        console.log(`Rendered ${scenes.length} scene cards`);
     }
 
-    // Action button handler
+    // Action button handler with enhanced functionality
     function handleActionBtn(e) {
         if (!fountainInput) return;
 
@@ -391,18 +559,24 @@ FADE OUT.`;
                 cycleText(['INT. ', 'EXT. ', 'INT./EXT. ']);
                 break;
             case 'time':
-                cycleText([' - DAY', ' - NIGHT', ' - MORNING', ' - EVENING']);
+                cycleText([' - DAY', ' - NIGHT', ' - MORNING', ' - EVENING', ' - DAWN', ' - DUSK', ' - CONTINUOUS']);
                 break;
             case 'transition':
-                cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:']);
+                cycleText(['CUT TO:', 'DISSOLVE TO:', 'FADE OUT.', 'FADE IN:', 'FADE TO BLACK.', 'SMASH CUT TO:']);
                 break;
         }
 
         history.add(fountainInput.value);
         
-        // Keep focus on mobile
+        // Keep focus and maintain mobile toolbar
         setTimeout(() => {
-            if (fountainInput) fountainInput.focus();
+            if (fountainInput) {
+                fountainInput.focus();
+                // Ensure toolbar stays visible
+                if (window.innerWidth <= 768 && currentView === 'write') {
+                    showMobileToolbar();
+                }
+            }
         }, 10);
     }
 
@@ -447,9 +621,10 @@ FADE OUT.`;
                 format: 'a4'
             });
 
-            // Try to load Unicode font
+            // Enhanced Unicode font loading
             try {
-                const fontResponse = await fetch('https://fonts.gstatic.com/s/notosans/v36/o-0IIpQlx3QUlC5A4PNr5TRA.ttf');
+                const fontUrl = 'https://fonts.gstatic.com/s/notosans/v36/o-0IIpQlx3QUlC5A4PNr5TRA.ttf';
+                const fontResponse = await fetch(fontUrl);
                 if (fontResponse.ok) {
                     const fontData = await fontResponse.arrayBuffer();
                     const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontData)));
@@ -465,76 +640,103 @@ FADE OUT.`;
                 doc.setFont('helvetica');
             }
 
-            doc.setFontSize(12);
-            const text = fountainInput.value || '';
-            const lines = text.split('\n');
-            
+            const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
             let y = 50;
             const lineHeight = 14;
             const pageHeight = 792;
-            const margin = 50;
+            const margin = 72; // 1 inch margin
 
-            // Title
+            // Title page
             doc.setFontSize(18);
-            doc.text(projectData.projectInfo.projectName || 'Untitled', 300, y, { align: 'center' });
+            const title = projectData.projectInfo.projectName || 'Untitled';
+            doc.text(title, 300, y, { align: 'center' });
             y += 30;
 
             doc.setFontSize(14);
-            doc.text(`by ${projectData.projectInfo.prodName || 'Author'}`, 300, y, { align: 'center' });
-            y += 50;
+            const author = `by ${projectData.projectInfo.prodName || 'Author'}`;
+            doc.text(author, 300, y, { align: 'center' });
+            y += 80;
 
             doc.setFontSize(12);
 
-            // Content
-            lines.forEach(line => {
+            // Process each element with proper indentation
+            elements.forEach(element => {
+                if (element.type === 'title') return; // Skip title elements
+
                 if (y > pageHeight - margin) {
                     doc.addPage();
                     y = margin;
                 }
 
-                const trimmed = line.trim();
-                if (trimmed.length === 0) {
-                    y += lineHeight / 2;
-                    return;
-                }
-
                 let x = margin;
-                if (trimmed === trimmed.toUpperCase() && trimmed.length > 0 && !trimmed.includes('.') && trimmed.length < 50) {
-                    x = 200; // Character names
-                } else if (trimmed.startsWith('(') && trimmed.endsWith(')')) {
-                    x = 160; // Parentheticals
-                } else if (/^(CUT TO:|FADE IN:|FADE OUT\.|DISSOLVE TO:)/.test(trimmed)) {
-                    x = 400; // Transitions
-                }
+                let fontSize = 12;
 
-                try {
-                    // Handle Unicode text
-                    const textToRender = trimmed.normalize('NFC');
-                    const splitText = doc.splitTextToSize(textToRender, 500);
-                    
-                    if (Array.isArray(splitText)) {
-                        splitText.forEach((textLine, index) => {
-                            if (y > pageHeight - margin) {
-                                doc.addPage();
-                                y = margin;
-                            }
-                            doc.text(textLine, x, y);
-                            if (index < splitText.length - 1) y += lineHeight;
-                        });
-                    } else {
-                        doc.text(splitText, x, y);
-                    }
-                } catch (err) {
-                    // Fallback for problematic characters
-                    const asciiText = trimmed.replace(/[^\x00-\x7F]/g, "?");
-                    doc.text(asciiText, x, y);
-                    console.warn('Used ASCII fallback for:', trimmed);
+                switch (element.type) {
+                    case 'scene_heading':
+                        fontSize = 12;
+                        y += lineHeight;
+                        doc.setFontSize(fontSize);
+                        const sceneText = element.sceneNumber ? `${element.sceneNumber}. ${element.text}` : element.text;
+                        doc.text(sceneText, x, y);
+                        break;
+                    case 'character':
+                        x = margin + 158; // 2.2 inches from left
+                        doc.setFontSize(fontSize);
+                        doc.text(element.text, x, y);
+                        break;
+                    case 'dialogue':
+                        x = margin + 72; // 1 inch from left
+                        doc.setFontSize(fontSize);
+                        const dialogueText = doc.splitTextToSize(element.text, 252); // 3.5 inch width
+                        if (Array.isArray(dialogueText)) {
+                            dialogueText.forEach((line, index) => {
+                                if (y > pageHeight - margin) {
+                                    doc.addPage();
+                                    y = margin;
+                                }
+                                doc.text(line, x, y);
+                                if (index < dialogueText.length - 1) y += lineHeight;
+                            });
+                        } else {
+                            doc.text(dialogueText, x, y);
+                        }
+                        break;
+                    case 'parenthetical':
+                        x = margin + 115; // 1.6 inches from left
+                        doc.setFontSize(fontSize);
+                        doc.text(element.text, x, y);
+                        break;
+                    case 'transition':
+                        doc.setFontSize(fontSize);
+                        doc.text(element.text, pageWidth - margin, y, { align: 'right' });
+                        break;
+                    case 'action':
+                        doc.setFontSize(fontSize);
+                        const actionText = doc.splitTextToSize(element.text, 432); // 6 inch width
+                        if (Array.isArray(actionText)) {
+                            actionText.forEach((line, index) => {
+                                if (y > pageHeight - margin) {
+                                    doc.addPage();
+                                    y = margin;
+                                }
+                                doc.text(line, x, y);
+                                if (index < actionText.length - 1) y += lineHeight;
+                            });
+                        } else {
+                            doc.text(actionText, x, y);
+                        }
+                        break;
+                    case 'empty':
+                        y += lineHeight / 2;
+                        return;
                 }
 
                 y += lineHeight;
             });
 
             doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
+            console.log('Enhanced PDF generated successfully');
+            
         } catch (error) {
             console.error('PDF generation failed:', error);
             alert('Error generating PDF. Please try again.');
@@ -568,36 +770,34 @@ FADE OUT.`;
         reader.readAsText(file, 'UTF-8');
     }
 
-    // Card functions
+    // Enhanced Card functions
     function editSceneFromCard(sceneId) {
-        const text = fountainInput.value || '';
-        const lines = text.split('\n');
-        let targetLineIndex = -1;
+        const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
+        let targetIndex = -1;
         let sceneCount = 0;
+        let charPosition = 0;
         const targetSceneNumber = parseInt(sceneId.replace('scene_', ''));
 
-        lines.forEach((line, index) => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
+        for (let i = 0; i < elements.length; i++) {
+            if (elements[i].type === 'scene_heading') {
                 sceneCount++;
                 if (sceneCount === targetSceneNumber) {
-                    targetLineIndex = index;
+                    targetIndex = i;
+                    break;
                 }
             }
-        });
+            charPosition += elements[i].original.length + 1; // +1 for newline
+        }
 
-        if (targetLineIndex >= 0) {
+        if (targetIndex >= 0) {
             switchView('write');
             setTimeout(() => {
                 if (fountainInput) {
                     fountainInput.focus();
-                    // Calculate character position
-                    const linesBeforeTarget = lines.slice(0, targetLineIndex);
-                    const charPosition = linesBeforeTarget.join('\n').length + (targetLineIndex > 0 ? 1 : 0);
                     fountainInput.setSelectionRange(charPosition, charPosition);
                     fountainInput.scrollTop = (charPosition / fountainInput.value.length) * fountainInput.scrollHeight;
                 }
-            }, 200);
+            }, 300);
         }
     }
 
@@ -607,10 +807,20 @@ FADE OUT.`;
 
         try {
             if (typeof html2canvas !== 'undefined') {
-                const canvas = await html2canvas(cardElement, {
+                // Temporarily hide the action buttons for clean export
+                const actionsDiv = cardElement.querySelector('.card-actions');
+                const originalDisplay = actionsDiv.style.display;
+                actionsDiv.style.display = 'none';
+
+                const canvas = await html2canvas(cardElement.querySelector('.scene-card-content'), {
                     backgroundColor: '#1f2937',
-                    scale: 2
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true
                 });
+                
+                // Restore the action buttons
+                actionsDiv.style.display = originalDisplay;
                 
                 canvas.toBlob(async (blob) => {
                     const fileName = `Scene_${cardElement.dataset.sceneNumber}.png`;
@@ -656,78 +866,41 @@ FADE OUT.`;
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
 
     async function saveAllCardsAsZip() {
-        if (typeof JSZip === 'undefined') {
-            // Fallback: save individual cards as text files
-            alert('ZIP library not available. Saving individual scene files...');
-            
-            const text = fountainInput.value || '';
-            const lines = text.split('\n');
-            const scenes = [];
-            let currentScene = null;
-            let sceneNumber = 0;
-
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
-                    if (currentScene) scenes.push(currentScene);
-                    sceneNumber++;
-                    currentScene = {
-                        sceneNumber: sceneNumber,
-                        heading: trimmed,
-                        content: ''
-                    };
-                } else if (currentScene && trimmed) {
-                    currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
-                }
-            });
-            if (currentScene) scenes.push(currentScene);
-
-            scenes.forEach(scene => {
-                const sceneText = `${scene.heading}\n\n${scene.content}`;
-                const blob = new Blob([sceneText], { type: 'text/plain;charset=utf-8' });
-                downloadBlob(blob, `Scene_${scene.sceneNumber}.txt`);
-            });
-            return;
-        }
-
         try {
-            // Create ZIP file with scene cards
-            const zip = new JSZip();
-            const text = fountainInput.value || '';
-            const lines = text.split('\n');
-            const scenes = [];
-            let currentScene = null;
-            let sceneNumber = 0;
+            const JSZip = window.JSZip;
+            if (!JSZip) {
+                // Fallback: save individual text files
+                alert('ZIP library not available. Saving individual scene files...');
+                const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
+                const scenes = extractScenesFromElements(elements);
+                
+                scenes.forEach(scene => {
+                    const sceneText = `${scene.heading}\n\n${scene.content.join('\n')}`;
+                    const blob = new Blob([sceneText], { type: 'text/plain;charset=utf-8' });
+                    downloadBlob(blob, `Scene_${scene.sceneNumber}.txt`);
+                });
+                return;
+            }
 
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
-                    if (currentScene) scenes.push(currentScene);
-                    sceneNumber++;
-                    currentScene = {
-                        sceneNumber: sceneNumber,
-                        heading: trimmed,
-                        content: ''
-                    };
-                } else if (currentScene && trimmed) {
-                    currentScene.content += (currentScene.content ? '\n' : '') + trimmed;
-                }
-            });
-            if (currentScene) scenes.push(currentScene);
+            const zip = new JSZip();
+            const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
+            const scenes = extractScenesFromElements(elements);
 
             // Add each scene to ZIP
             scenes.forEach(scene => {
-                const sceneText = `${scene.heading}\n\n${scene.content}`;
+                const sceneText = `${scene.heading}\n\n${scene.content.join('\n')}`;
                 zip.file(`Scene_${scene.sceneNumber}.txt`, sceneText);
             });
 
             // Add project info
-            const projectInfo = `Project: ${projectData.projectInfo.projectName}\nAuthor: ${projectData.projectInfo.prodName}\nTotal Scenes: ${scenes.length}\nGenerated: ${new Date().toLocaleString()}`;
+            const projectInfo = `Project: ${projectData.projectInfo.projectName}\nAuthor: ${projectData.projectInfo.prodName}\nTotal Scenes: ${scenes.length}\nGenerated: ${new Date().toLocaleString()}\n\nGenerated by ToscripT - Empowering Filmmakers Worldwide 🎬`;
             zip.file('Project_Info.txt', projectInfo);
 
             // Generate ZIP and download
@@ -739,6 +912,29 @@ FADE OUT.`;
             console.error('ZIP creation failed:', error);
             alert('Error creating ZIP file. Please try again.');
         }
+    }
+
+    function extractScenesFromElements(elements) {
+        const scenes = [];
+        let currentScene = null;
+        let sceneNumber = 0;
+
+        elements.forEach(element => {
+            if (element.type === 'scene_heading') {
+                if (currentScene) scenes.push(currentScene);
+                sceneNumber++;
+                currentScene = {
+                    sceneNumber: sceneNumber,
+                    heading: element.text,
+                    content: []
+                };
+            } else if (currentScene && element.text && element.type !== 'title' && element.type !== 'empty') {
+                currentScene.content.push(element.text);
+            }
+        });
+
+        if (currentScene) scenes.push(currentScene);
+        return scenes;
     }
 
     // Modal functions
@@ -811,40 +1007,42 @@ FADE OUT.`;
         const sceneList = document.getElementById('scene-list');
         if (!sceneList || !fountainInput) return;
 
-        const lines = fountainInput.value.split('\n');
-        const scenes = [];
+        const elements = parseScriptWithIndustryStandards(fountainInput.value || '');
+        const scenes = elements.filter(el => el.type === 'scene_heading');
 
-        lines.forEach((line, index) => {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('INT.') || trimmed.startsWith('EXT.') || trimmed.startsWith('INT./EXT.')) {
-                scenes.push({
-                    line: index,
-                    text: trimmed
-                });
-            }
-        });
-
-        sceneList.innerHTML = scenes.map((scene) =>
-            `<li data-line="${scene.line}">${scene.text}</li>`
+        sceneList.innerHTML = scenes.map((scene, index) =>
+            `<li data-line="${index}">${scene.text}</li>`
         ).join('');
+
+        console.log(`Updated scene navigator with ${scenes.length} scenes`);
     }
 
-    // Setup all event listeners
+    // Comprehensive Event Listeners Setup
     function setupEventListeners() {
         console.log('Setting up comprehensive event listeners...');
 
-        // Fountain input
+        // Fountain input with enhanced mobile support
         if (fountainInput) {
             fountainInput.addEventListener('focus', () => {
                 clearPlaceholder();
-                // Prevent keyboard from closing mobile toolbar
-                if (mobileToolbar && window.innerWidth <= 768 && currentView === 'write') {
+                // Enhanced mobile keyboard detection
+                if (window.innerWidth <= 768 && currentView === 'write') {
                     setTimeout(() => {
-                        if (mobileToolbar) mobileToolbar.style.display = 'block';
+                        showMobileToolbar();
                     }, 300);
                 }
             });
-            fountainInput.addEventListener('blur', setPlaceholder);
+            
+            fountainInput.addEventListener('blur', () => {
+                setPlaceholder();
+                // Don't hide toolbar immediately on blur - user might be clicking a button
+                setTimeout(() => {
+                    if (document.activeElement !== fountainInput && !document.activeElement.closest('.mobile-keyboard-toolbar')) {
+                        hideMobileToolbar();
+                    }
+                }, 100);
+            });
+            
             fountainInput.addEventListener('input', () => {
                 history.add(fountainInput.value);
                 saveProjectData();
@@ -857,65 +1055,68 @@ FADE OUT.`;
             fileInput.addEventListener('change', openFountainFile);
         }
 
-        // View switching buttons
+        // View switching buttons - ENHANCED
         const showScriptBtn = document.getElementById('show-script-btn');
         if (showScriptBtn) {
-            showScriptBtn.addEventListener('click', () => {
-                console.log('Show script clicked');
+            showScriptBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('TO SCRIPT clicked');
                 switchView('script');
             });
         }
 
         const showWriteBtnHeader = document.getElementById('show-write-btn-header');
         if (showWriteBtnHeader) {
-            showWriteBtnHeader.addEventListener('click', () => {
-                console.log('Show write clicked');
+            showWriteBtnHeader.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('TO WRITE clicked from script view');
+                switchView('write');
+            });
+        }
+
+        const showWriteBtnCardHeader = document.getElementById('show-write-btn-card-header');
+        if (showWriteBtnCardHeader) {
+            showWriteBtnCardHeader.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('TO WRITE clicked from card view');
                 switchView('write');
             });
         }
 
         const cardViewBtn = document.getElementById('card-view-btn');
         if (cardViewBtn) {
-            cardViewBtn.addEventListener('click', () => switchView('card'));
-        }
-
-        // Hamburger menus (LEFT side for regular menu)
-        const hamburgerBtn = document.getElementById('hamburger-btn');
-        if (hamburgerBtn) {
-            hamburgerBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                console.log('Hamburger clicked - toggling menu panel');
-                if (menuPanel) menuPanel.classList.toggle('open');
+            cardViewBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchView('card');
             });
         }
 
-        const hamburgerBtnScript = document.getElementById('hamburger-btn-script');
-        if (hamburgerBtnScript) {
-            hamburgerBtnScript.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (menuPanel) menuPanel.classList.toggle('open');
-            });
-        }
+        // Hamburger menus - ALL VARIANTS
+        const hamburgerBtns = ['hamburger-btn', 'hamburger-btn-script', 'hamburger-btn-card'];
+        hamburgerBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log(`${id} clicked - toggling menu panel`);
+                    if (menuPanel) menuPanel.classList.toggle('open');
+                });
+            }
+        });
 
-        // Scene navigator (RIGHT side button)
-        const sceneNavigatorBtn = document.getElementById('scene-navigator-btn');
-        if (sceneNavigatorBtn) {
-            sceneNavigatorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                console.log('Scene navigator clicked');
-                updateSceneNavigator();
-                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open');
-            });
-        }
-
-        const sceneNavigatorBtnScript = document.getElementById('scene-navigator-btn-script');
-        if (sceneNavigatorBtnScript) {
-            sceneNavigatorBtnScript.addEventListener('click', (e) => {
-                e.stopPropagation();
-                updateSceneNavigator();
-                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open');
-            });
-        }
+        // Scene navigator (RIGHT side button) - ALL VARIANTS
+        const sceneNavigatorBtns = ['scene-navigator-btn', 'scene-navigator-btn-script'];
+        sceneNavigatorBtns.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    console.log(`${id} clicked`);
+                    updateSceneNavigator();
+                    if (sceneNavigatorPanel) sceneNavigatorPanel.classList.add('open');
+                });
+            }
+        });
 
         const closeNavigatorBtn = document.getElementById('close-navigator-btn');
         if (closeNavigatorBtn) {
@@ -924,10 +1125,9 @@ FADE OUT.`;
             });
         }
 
-        // Menu items
-        const newBtn = document.getElementById('new-btn');
-        if (newBtn) {
-            newBtn.addEventListener('click', () => {
+        // Menu items - ENHANCED
+        const menuItems = [
+            { id: 'new-btn', handler: () => {
                 if (confirm('Are you sure? Unsaved changes will be lost.')) {
                     if (fountainInput) fountainInput.value = '';
                     projectData = { projectInfo: { projectName: "Untitled", prodName: "Author", scriptContent: "" } };
@@ -937,77 +1137,44 @@ FADE OUT.`;
                     saveProjectData();
                     setPlaceholder();
                 }
-            });
-        }
-
-        const openBtn = document.getElementById('open-btn');
-        if (openBtn) {
-            openBtn.addEventListener('click', () => {
-                if (fileInput) fileInput.click();
-            });
-        }
-
-        // Save menu toggle
-        const saveMenuBtn = document.getElementById('save-menu-btn');
-        if (saveMenuBtn) {
-            saveMenuBtn.addEventListener('click', (e) => {
+            }},
+            { id: 'open-btn', handler: () => fileInput && fileInput.click() },
+            { id: 'save-menu-btn', handler: (e) => {
                 e.preventDefault();
-                const dropdown = saveMenuBtn.parentElement;
+                const dropdown = e.currentTarget.parentElement;
                 if (dropdown) dropdown.classList.toggle('open');
-            });
-        }
-
-        const savePdfBtn = document.getElementById('save-pdf-btn');
-        if (savePdfBtn) {
-            savePdfBtn.addEventListener('click', saveAsPdfWithUnicode);
-        }
-
-        const saveFountainBtn = document.getElementById('save-fountain-btn');
-        if (saveFountainBtn) {
-            saveFountainBtn.addEventListener('click', saveAsFountain);
-        }
-
-        const projectInfoBtn = document.getElementById('project-info-btn');
-        if (projectInfoBtn) {
-            projectInfoBtn.addEventListener('click', openProjectInfoModal);
-        }
-
-        const titlePageBtn = document.getElementById('title-page-btn');
-        if (titlePageBtn) {
-            titlePageBtn.addEventListener('click', openTitlePageModal);
-        }
-
-        const infoBtn = document.getElementById('info-btn');
-        if (infoBtn) {
-            infoBtn.addEventListener('click', () => {
+            }},
+            { id: 'save-pdf-btn', handler: saveAsPdfWithUnicode },
+            { id: 'save-fountain-btn', handler: saveAsFountain },
+            { id: 'project-info-btn', handler: openProjectInfoModal },
+            { id: 'title-page-btn', handler: openTitlePageModal },
+            { id: 'info-btn', handler: () => {
                 const modal = document.getElementById('info-modal');
                 if (modal) modal.classList.add('open');
-            });
-        }
-
-        const aboutBtn = document.getElementById('about-btn');
-        if (aboutBtn) {
-            aboutBtn.addEventListener('click', () => {
+            }},
+            { id: 'about-btn', handler: () => {
                 const modal = document.getElementById('about-modal');
                 if (modal) modal.classList.add('open');
-            });
-        }
+            }},
+            { id: 'scene-no-btn', handler: toggleSceneNumbers },
+            { id: 'auto-save-btn', handler: toggleAutoSave },
+            { id: 'save-all-cards-btn', handler: saveAllCardsAsZip }
+        ];
 
-        // Toggle buttons
-        const sceneNoBtn = document.getElementById('scene-no-btn');
-        if (sceneNoBtn) {
-            sceneNoBtn.addEventListener('click', toggleSceneNumbers);
-        }
+        menuItems.forEach(({ id, handler }) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('click', handler);
+                console.log(`Attached ${id} handler`);
+            }
+        });
 
-        const autoSaveBtn = document.getElementById('auto-save-btn');
-        if (autoSaveBtn) {
-            autoSaveBtn.addEventListener('click', toggleAutoSave);
-        }
-
-        // Fullscreen button
+        // Fullscreen button - FIXED
         const fullscreenBtn = document.getElementById('fullscreen-btn-main');
         if (fullscreenBtn) {
-            fullscreenBtn.addEventListener('click', () => {
+            fullscreenBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Fullscreen toggle clicked');
                 document.body.classList.toggle('fullscreen-active');
                 if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen().catch(console.error);
@@ -1017,13 +1184,8 @@ FADE OUT.`;
             });
         }
 
-        // Action buttons - desktop
-        document.querySelectorAll('.action-btn').forEach(btn => {
-            btn.addEventListener('click', handleActionBtn);
-        });
-
-        // Action buttons - mobile
-        document.querySelectorAll('.mobile-action-btn').forEach(btn => {
+        // Action buttons - BOTH DESKTOP AND MOBILE
+        document.querySelectorAll('.action-btn, .mobile-action-btn').forEach(btn => {
             btn.addEventListener('click', handleActionBtn);
         });
 
@@ -1040,14 +1202,13 @@ FADE OUT.`;
         document.addEventListener('click', (e) => {
             // Close menu panel when clicking outside
             if (menuPanel && menuPanel.classList.contains('open') && !menuPanel.contains(e.target) && 
-                !e.target.closest('#hamburger-btn') && !e.target.closest('#hamburger-btn-script')) {
+                !e.target.closest('[id^="hamburger-btn"]')) {
                 menuPanel.classList.remove('open');
             }
 
             // Close scene navigator when clicking outside
             if (sceneNavigatorPanel && sceneNavigatorPanel.classList.contains('open') && 
-                !sceneNavigatorPanel.contains(e.target) && !e.target.closest('#scene-navigator-btn') && 
-                !e.target.closest('#scene-navigator-btn-script')) {
+                !sceneNavigatorPanel.contains(e.target) && !e.target.closest('[id^="scene-navigator-btn"]')) {
                 sceneNavigatorPanel.classList.remove('open');
             }
 
@@ -1062,21 +1223,12 @@ FADE OUT.`;
             if (e.target.id === 'save-title-btn') handleSaveTitlePage();
 
             // Card view buttons (dynamically created)
-            if (e.target.id === 'show-write-btn-from-card') {
-                switchView('write');
-            }
-            if (e.target.id === 'save-all-cards-btn') {
-                saveAllCardsAsZip();
-            }
-
-            // Edit card button
             if (e.target.closest('.edit-card-btn')) {
                 const btn = e.target.closest('.edit-card-btn');
                 const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
                 if (sceneId) editSceneFromCard(sceneId);
             }
 
-            // Share card button
             if (e.target.closest('.share-card-btn')) {
                 const btn = e.target.closest('.share-card-btn');
                 const sceneId = btn.dataset.sceneId || btn.closest('.scene-card').dataset.sceneId;
@@ -1084,24 +1236,35 @@ FADE OUT.`;
             }
         });
 
-        console.log('All event listeners setup complete');
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (menuPanel) menuPanel.classList.remove('open');
+                if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open');
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('open');
+                });
+            }
+        });
+
+        console.log('✅ All event listeners setup complete');
     }
 
-    // Initialize
+    // Initialize Application
     function initialize() {
-        console.log('Initializing ToscripT...');
+        console.log('🎬 Initializing ToscripT - Empowering Filmmakers Worldwide...');
 
         // Create modals
         createModal('project-info-modal', 'Project Info',
             `<div class="form-group">
                 <label for="prod-name-input">Production Name / Title</label>
-                <input type="text" id="prod-name-input">
+                <input type="text" id="prod-name-input" placeholder="Enter project title">
             </div>
             <div class="form-group">
                 <label for="director-name-input">Author / Writer</label>
-                <input type="text" id="director-name-input">
+                <input type="text" id="director-name-input" placeholder="Enter author name">
             </div>`,
-            `<button id="save-project-info-btn" class="main-action-btn">Save</button>`
+            `<button id="save-project-info-btn" class="main-action-btn">Save Project Info</button>`
         );
 
         createModal('title-page-modal', 'Title Page',
@@ -1113,24 +1276,30 @@ FADE OUT.`;
                 <label for="author-input">Author</label>
                 <input type="text" id="author-input" placeholder="Enter author name">
             </div>`,
-            `<button id="save-title-btn" class="main-action-btn">Save</button>`
+            `<button id="save-title-btn" class="main-action-btn">Save Title Page</button>`
         );
 
         createModal('about-modal', 'About ToscripT',
-            `<p style="text-align: center; margin: 2rem 0;">
-                <strong style="color: var(--primary-color);">ToscripT</strong><br>
-                Professional Screenwriting Tool<br><br>
-                <span style="color: var(--muted-text-color);">Designed by</span><br>
-                <strong>Thosho Tech</strong><br><br>
-                <span style="font-size: 0.9rem; color: var(--muted-text-color);">
-                    Empowering scriptwriters worldwide with professional tools
-                </span>
-            </p>`
+            `<div style="text-align: center; margin: 2rem 0;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🎬</div>
+                <h3 style="color: var(--primary-color); margin: 0;">ToscripT</h3>
+                <p style="color: var(--muted-text-color); margin: 0.5rem 0;">Professional Screenwriting Tool</p>
+                <hr style="border-color: var(--border-color); margin: 2rem 0;">
+                <p><strong>Designed by Thosho Tech</strong></p>
+                <p style="font-size: 0.9rem; color: var(--muted-text-color);">
+                    Empowering scriptwriters worldwide with professional tools that work seamlessly on mobile devices.
+                </p>
+                <div style="margin-top: 2rem;">
+                    <p style="font-size: 0.8rem; color: var(--muted-text-color);">
+                        Bringing positive change to the film industry, one screenplay at a time.
+                    </p>
+                </div>
+            </div>`
         );
 
         createModal('info-modal', 'Info & Help',
             `<div style="line-height: 1.6;">
-                <h3 style="color: var(--primary-color); margin-top: 0;">Fountain Syntax</h3>
+                <h3 style="color: var(--primary-color); margin-top: 0;">📝 Fountain Syntax</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>Scene Heading:</strong> Line starts with INT. or EXT.</li>
                     <li><strong>Character:</strong> Any line in all uppercase.</li>
@@ -1138,7 +1307,7 @@ FADE OUT.`;
                     <li><strong>Parenthetical:</strong> Text in (parentheses).</li>
                     <li><strong>Transition:</strong> CUT TO:, FADE IN:, etc.</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">Mobile Buttons</h3>
+                <h3 style="color: var(--primary-color);">📱 Mobile Buttons</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>I/E:</strong> Cycles INT./EXT./INT./EXT.</li>
                     <li><strong>D/N:</strong> Cycles DAY/NIGHT/MORNING/EVENING.</li>
@@ -1146,56 +1315,60 @@ FADE OUT.`;
                     <li><strong>():</strong> Wraps selected text in parentheses.</li>
                     <li><strong>TO:</strong> Cycles transition types.</li>
                 </ul>
-                <h3 style="color: var(--primary-color);">Card View Features</h3>
+                <h3 style="color: var(--primary-color);">🎞️ Card View Features</h3>
                 <ul style="padding-left: 1.2rem;">
                     <li><strong>Edit:</strong> Jump to scene in editor</li>
-                    <li><strong>Share:</strong> Share individual scene</li>
+                    <li><strong>Share:</strong> Share individual scene as clean image</li>
                     <li><strong>Save All Cards:</strong> Download all scenes as ZIP</li>
                 </ul>
+                <p style="margin-top: 2rem; font-size: 0.9rem; color: var(--muted-text-color); text-align: center;">
+                    Professional screenplay formatting follows industry standards automatically.
+                </p>
             </div>`
         );
 
         setupEventListeners();
-        setupMobileKeyboard();
+        setupAdvancedKeyboardDetection();
         loadProjectData();
 
         if (fountainInput) {
             if (fountainInput.value === '') {
                 setPlaceholder();
             }
-            setTimeout(() => fountainInput.focus(), 500);
+            
+            // Enhanced mobile focus
+            setTimeout(() => {
+                if (currentView === 'write') {
+                    fountainInput.focus();
+                }
+            }, 500);
         }
 
-        // Handle mobile toolbar visibility
-        function updateMobileToolbar() {
-            if (mobileToolbar && window.innerWidth <= 768) {
-                if (currentView === 'write') {
-                    mobileToolbar.style.display = 'block';
+        // Mobile toolbar management
+        function updateMobileToolbarVisibility() {
+            if (window.innerWidth <= 768) {
+                if (currentView === 'write' && document.activeElement === fountainInput) {
+                    showMobileToolbar();
                 } else {
-                    mobileToolbar.style.display = 'none';
+                    hideMobileToolbar();
                 }
-            } else if (mobileToolbar) {
-                mobileToolbar.style.display = 'none';
+            } else {
+                hideMobileToolbar();
             }
         }
 
-        window.addEventListener('resize', updateMobileToolbar);
-        updateMobileToolbar();
+        window.addEventListener('resize', updateMobileToolbarVisibility);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(updateMobileToolbarVisibility, 500);
+        });
 
         history.add(fountainInput ? fountainInput.value : '');
-        
-        // Add JSZip for ZIP functionality
-        if (typeof JSZip === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-            script.onload = () => console.log('JSZip loaded successfully');
-            script.onerror = () => console.warn('JSZip failed to load - ZIP functionality will use fallback');
-            document.head.appendChild(script);
-        }
 
-        console.log('🎬 ToscripT initialized successfully! Ready to help scriptwriters worldwide! 🌟');
+        console.log('🌟 ToscripT initialized successfully!');
+        console.log('🎯 Ready to help screenwriters create amazing stories!');
+        console.log('📱 Mobile keyboard toolbar will appear above keyboard when typing');
     }
 
-    // Start the app
+    // Start the application
     setTimeout(initialize, 100);
 });
