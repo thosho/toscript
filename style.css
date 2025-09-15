@@ -1111,6 +1111,25 @@ textarea::-webkit-scrollbar-thumb,
 }
 
 /* This adjusts the hover position to maintain the animation and gap. */
+
+/* --- PATCH: Adjust Card Bottom Space and Text Size --- */
+
+/* 1. Removes the fixed minimum height of the card, allowing it to shrink
+      to fit its content. This eliminates the extra space below the description.
+   2. Increases the base font size for all text inside the card to 13px,
+      matching the scene heading size.
+   3. Adjusts line-height for better readability with the new font size. */
+.scene-card {
+    min-height: initial; /* This removes the minimum height */
+    font-size: 13px;     /* Increases text size from 12px to 13px */
+    line-height: 1.5;    /* Adjusted for better readability */
+}
+
+/* This adjusts the description's default height to correctly fit
+   ~5 lines of the new, larger text size. */
+.card-description {
+    min-height: 120px;
+}
 .scene-card:hover .card-actions {
     opacity: 1;
     right: -50px; /* Increased from -45px */
