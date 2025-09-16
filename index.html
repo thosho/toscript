@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -8,13 +10,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     
-    <link rel="stylesheet" href="style.css">
-    <!-- ADD THIS LINE for image saving -->
+    <!-- FIXED: Added Fountain.js CDN -->
+    <script src="https://cdn.jsdelivr.net/gh/mattdaly/Fountain.js@master/fountain.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js" defer></script>
+    
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Write Mode Header -->
@@ -42,7 +46,7 @@
             <button id="scene-navigator-btn-script" class="icon-btn" title="Scene Navigator & Filters"><i class="fas fa-layer-group"></i></button>
         </div>
     </header>
-
+    
     <!-- Card Mode Header -->
     <header id="card-header" class="page-header card-mode-header" style="display: none;">
         <div class="header-left">
@@ -116,18 +120,19 @@
              <div id="card-container"></div>
         </div>
     </main>
-
-    <!-- FIXED: Professional Mobile Keyboard Toolbar (Research-Based) -->
+    
+    <!-- FIXED: Mobile Keyboard Toolbar - Now shows in fullscreen -->
     <div id="mobile-keyboard-toolbar" class="mobile-keyboard-toolbar">
         <div class="keyboard-toolbar-content">
-            <button class="keyboard-btn" data-action="scene">I/E</button>
-            <button class="keyboard-btn" data-action="time">D/N</button>
-            <button class="keyboard-btn" data-action="caps">Aa</button>
-            <button class="keyboard-btn" data-action="parens">()</button>
-            <button class="keyboard-btn" data-action="transition">TO:</button>
+            <button class="keyboard-btn" data-action="scene" title="I/E">I/E</button>
+            <button class="keyboard-btn" data-action="time" title="D/N">D/N</button>
+            <button class="keyboard-btn" data-action="caps" title="Aa">Aa</button>
+            <button class="keyboard-btn" data-action="parens" title="()">()</button>
+            <button class="keyboard-btn" data-action="transition" title="TO:">TO:</button>
         </div>
     </div>
     
+    <!-- FIXED: Enhanced Scene Navigator Panel -->
     <div id="scene-navigator-panel" class="side-panel">
         <div class="panel-header">
             <h2>Navigator & Filters</h2>
@@ -145,9 +150,16 @@
             <input type="text" id="filter-value-input" placeholder="Type to filter..." style="display: none;">
             <div class="panel-subtext" id="filter-help-text" style="display: none;">Enter keywords to filter scenes</div>
         </div>
+        
+        <!-- FIXED: Enhanced Reorder Section with Save Button -->
         <div class="panel-section">
-            <h4>Reorder Scenes</h4>
-            <p class="panel-subtext">Drag to reorder scenes</p>
+            <div class="reorder-header">
+                <h4>Reorder Scenes</h4>
+                <button id="export-scene-order-btn" class="export-btn" title="Export Scene Order">
+                    <i class="fas fa-download"></i> Save Order
+                </button>
+            </div>
+            <p class="panel-subtext">Drag to reorder scenes • Click to jump</p>
             <ul id="scene-list"></ul>
         </div>
     </div>
