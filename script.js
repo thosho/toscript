@@ -983,47 +983,92 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-// REPLACEMENT FUNCTION: Exports a PDF by "screenshotting" the formatted preview.
-    // This guarantees perfect Unicode support for ANY language.
-    async function saveAsPdfWithUnicode() {
+
+    // NEW FUNCTION 1: For English-only, selectable text PDF
+    function saveAsPdfEnglish() {
+        if (typeof window.jspdf === 'undefined') {
+            return alert('PDF library (jspdf) is not loaded.');
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+
+        // Standard Screenplay Layout Constants (in inches)
+        const leftMargin = 1.5;
+        const rightMargin = 1.0;
+        const topMargin = 1.0;
+        const bottomMargin = 1.0;
+        const pageHeight = 11.0;
+        const pageWidth = 8.5;
+        const lineHeight = 1 / 6;
+
+        const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0 };
+        const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5 };
+
+        const tokens = parseFountain(fountainInput.value || '');
+        let y = topMargin;
+
+        const checkPageBreak = (linesCount = 1) => {
+            if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
+                doc.addPage();
+                y = topMargin;
+            }
+        };
+
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(12);
+
+        tokens.forEach(token => {
+            if (!token.type || !token.text) {
+                if (token.type === 'empty') y += lineHeight;
+                return;
+            }
+
+            const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+            if (['scene_heading', 'character', 'transition'].includes(token.type)) {
+                checkPageBreak();
+                y += lineHeight;
+            }
+            checkPageBreak(textLines.length);
+            doc.setFont('Courier', token.type === 'scene_heading' ? 'bold' : 'normal');
+
+            if (token.type === 'transition') {
+                doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
+            } else {
+                const x = leftMargin + (indents[token.type] || 0);
+                doc.text(textLines, x, y);
+            }
+            y += textLines.length * lineHeight;
+        });
+        
+        doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
+    }
+
+    // NEW FUNCTION 2: For Unicode/any language, image-based PDF
+    async function saveAsPdfUnicode() {
         if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
             return alert('Required libraries (jspdf or html2canvas) are not loaded.');
         }
 
-        // 1. Get the source element that is already correctly formatted on screen
         const sourceElement = document.getElementById('screenplay-output');
         if (!sourceElement || sourceElement.innerText.trim() === '') {
-            return alert('Nothing to save. Please make sure you are in the "TO SCRIPT" preview mode.');
+            return alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
         }
 
-        alert('Generating high-quality PDF, this may take a moment...');
+        alert('Generating high-quality Unicode PDF, this may take a moment...');
 
         try {
-            // 2. Use html2canvas to take a "screenshot" of the entire script preview
             const canvas = await html2canvas(sourceElement, {
-                scale: 2, // Higher scale for better quality print
-                useCORS: true,
-                backgroundColor: '#ffffff',
+                scale: 2, backgroundColor: '#ffffff', useCORS: true,
             });
 
             const imgData = canvas.toDataURL('image/png');
-
-            // 3. Set up the PDF document dimensions
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt', // Use points to match canvas dimensions
-                format: 'a4'
-            });
-
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = pdf.internal.pageSize.getHeight();
-            
-            // Calculate the image's height in the PDF, maintaining aspect ratio
             const imgProps = pdf.getImageProperties(imgData);
             const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
-
-            // 4. Loop through the tall image and add it to the PDF page by page
             let heightLeft = imgHeightInPdf;
             let position = 0;
 
@@ -1036,16 +1081,15 @@ async function saveAllCardsAsImages() {
                 pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
                 heightLeft -= pdfHeight;
             }
-
-            // 5. Save the final PDF
-            pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
-            console.log('📄 PDF generated successfully using the image method.');
-
+            
+            pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
         } catch(error) {
             console.error("PDF generation failed:", error);
-            alert("An error occurred while creating the PDF.");
+            alert("An error occurred while creating the Unicode PDF.");
         }
-    }    
+    }
+
+    
     function openFountainFile(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1304,7 +1348,8 @@ async function saveAllCardsAsImages() {
                 if (dropdown) dropdown.classList.toggle('open');
             },
             'save-fountain-btn': saveAsFountain,
-            'save-pdf-btn': saveAsPdfWithUnicode,
+            'save-pdf-english-btn': saveAsPdfEnglish,
+            'save-pdf-unicode-btn': saveAsPdfUnicode,
             'save-filmproj-btn': saveAsFilmProj,
             'project-info-btn': openProjectInfoModal,
             'title-page-btn': openTitlePageModal,
