@@ -983,91 +983,69 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-// REPLACEMENT FUNCTION: Exports a professionally formatted PDF with FULL UNICODE SUPPORT for Indian languages.
+// REPLACEMENT FUNCTION: Exports a PDF by "screenshotting" the formatted preview.
+    // This guarantees perfect Unicode support for ANY language.
     async function saveAsPdfWithUnicode() {
-        if (typeof window.jspdf === 'undefined') {
-            return alert('PDF library (jspdf) is not loaded. Please try again.');
+        if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+            return alert('Required libraries (jspdf or html2canvas) are not loaded.');
         }
 
-        // --- 1. FONT DATA FOR UNICODE SUPPORT ---
-        // This is the complete font data string. It is very long, which is normal and necessary.
-        const fontData = 'AAEAAAARAQAABAAQR0RFRgB5AHQAAe4gR1BPUw2W404AA+9QSEdTSFYE240AAAO8T1MvMmeg9wAAAWgAAABgY21hcAWPAVMAAAGMAAABymN2dCAARAIsAAAMxAAAAARmcGdtXQKyAAADNAAAAmJnbHlmUa4o5wAADPwAAAXQaGVhZAUoBuUAAAEsAAAANmhoZWEH8wTDAAABXAAAACRobXR4DAAAAAABqAAAATBsb2NhAwADSAAAymAAAAAqbWF4cAAUAAYAAAEwAAAAIG5hbWUe9eNIAAACIAAAAsZwb3N0/58AMgAADjAAAAAocHJlcGgGjIUAAAJAAAAAECQAGQAAAAABAAAAAAAAAAEGAAAAAAAAgACAAIAAQAAAFIALEBAADAAAAAQACAAMABQAGAAcACAAJAAoACwAMAA0ADgAPABAAEQASABMAFAAVABYAFwAYABkAGgAbABwAHQAeAB8AIAAhACIAIwAkACUAJgAnACgAKQAqACsALAAtAC4ALwAwADEAMgAzADQANQA2ADcAOAA5ADoAOwA8AD0APgA/AEAAQQBCAEMARABFAEYARwBIAEkASgBLAEwATQBOAE8AUABRAFIAUwBUAFUAVgBXAFgAWQBaAFsAXABdAF4AXwBgAGEAYgBjAGQAZQBmAGcAaABpAGoAawBsAG0AbgBvAHAAcQByAHMAdAB1AGMAcwBAAEEA9gD4APoA/gEAAQIBAwEEAQUBBgEHAQgBCQEKAQsBDAENAQ4BDwEQAREBEgETARQBFQEWARcBGQEaARsBHAEdAR4BHwEgASIBJAElASgBKgEtAS4BLwEwATEBMgEzATQBNQE2ATcBOAE5AToBOwE8AT0BPgE/AUABQQFCAUMBRAFFAUYBRwFIAUkBSgFLAUwBTQFOAU8BUAFRAVIBUwFUAVUBVgFXAVgBWQFaAVsBXAFdAV4BXwFgAWIBYwFkAWUBZgFnAWgBaQFsAW0BbgFvAXABcQGMAZABlAGYAZwBoAGkAbABtAG4AbwBxAHIBcwB0AHUAdgB3AHgAegB7AHwAfQB+AH8AgACBAIIAgwCEAIUAhgCHAIgAiQCLAIwAjQCOAJAAkQCSAJMAlACVAJYAmACZAJoAmwCcAJ0AnwCgAKYArgDAAMIAwwDEAMUAxgDHAMgAyQDLAMwAzgDQANEAtgC3ALgAugDAAMMAxwDJAMsAzwDSANMA1QDVANcA2QDbAN0A3wDfAOMA5gD7APwA/gAAAAEAAAAAAAAAAAAAAAAAAAABAQAAAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAAQABAAAAAAABAAEAA-p... (I hope this placeholder is sufficient for the model to understand I need the actual long Base64 string for a font)';
+        // 1. Get the source element that is already correctly formatted on screen
+        const sourceElement = document.getElementById('screenplay-output');
+        if (!sourceElement || sourceElement.innerText.trim() === '') {
+            return alert('Nothing to save. Please make sure you are in the "TO SCRIPT" preview mode.');
+        }
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+        alert('Generating high-quality PDF, this may take a moment...');
 
-        // --- 2. REGISTER THE FONT WITH jspPDF ---
-        // This adds the font file to the PDF's virtual file system and makes it available.
-        doc.addFileToVFS('Lohit-Devanagari.ttf', fontData);
-        doc.addFont('Lohit-Devanagari.ttf', 'Lohit-Devanagari', 'normal');
+        try {
+            // 2. Use html2canvas to take a "screenshot" of the entire script preview
+            const canvas = await html2canvas(sourceElement, {
+                scale: 2, // Higher scale for better quality print
+                useCORS: true,
+                backgroundColor: '#ffffff',
+            });
 
-        // --- Standard Screenplay Layout Constants (in inches) ---
-        const leftMargin = 1.5;
-        const rightMargin = 1.0;
-        const topMargin = 1.0;
-        const bottomMargin = 1.0;
-        const pageHeight = 11.0;
-        const pageWidth = 8.5;
-        const lineHeight = 1 / 6; // 12pt font is 1/6th of an inch high
+            const imgData = canvas.toDataURL('image/png');
 
-        const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0 };
-        const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5 };
+            // 3. Set up the PDF document dimensions
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'pt', // Use points to match canvas dimensions
+                format: 'a4'
+            });
 
-        // Use our correct parser to get the tokens
-        const tokens = parseFountain(fountainInput.value || '');
-        let y = topMargin;
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            // Calculate the image's height in the PDF, maintaining aspect ratio
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
 
-        const checkPageBreak = (linesCount = 1) => {
-            if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
-                doc.addPage();
-                y = topMargin;
+            // 4. Loop through the tall image and add it to the PDF page by page
+            let heightLeft = imgHeightInPdf;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeightInPdf;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+                heightLeft -= pdfHeight;
             }
-        };
 
-        // --- 3. SET THE DOCUMENT TO USE THE NEW FONT ---
-        doc.setFont('Lohit-Devanagari');
-        doc.setFontSize(12);
+            // 5. Save the final PDF
+            pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
+            console.log('📄 PDF generated successfully using the image method.');
 
-        // Loop through each token and add it to the PDF
-        tokens.forEach(token => {
-            if (!token.type) return;
-
-            if (token.type === 'empty' && token.text.trim() === '') {
-                 y += lineHeight;
-                 return;
-            }
-
-            if (!token.text) return;
-
-
-            const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
-
-            if (['scene_heading', 'character', 'transition'].includes(token.type)) {
-                checkPageBreak();
-                y += lineHeight;
-            }
-            
-            checkPageBreak(textLines.length);
-
-            // Set font style for scene headings (transitions are not bold in this font)
-            doc.setFont('Lohit-Devanagari', 'normal'); // Set to normal for all
-            if (token.type === 'scene_heading') {
-                // Manually bolding isn't well supported with custom fonts, so we rely on uppercase
-            }
-
-            if (token.type === 'transition') {
-                doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
-            } else {
-                const x = leftMargin + (indents[token.type] || 0);
-                doc.text(textLines, x, y);
-            }
-            y += textLines.length * lineHeight;
-        });
-        
-        doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
-        console.log('📄 PDF with Unicode support generated successfully.');
-    }
-    
+        } catch(error) {
+            console.error("PDF generation failed:", error);
+            alert("An error occurred while creating the PDF.");
+        }
+    }    
     function openFountainFile(e) {
         const file = e.target.files[0];
         if (!file) return;
