@@ -983,84 +983,94 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-    async function saveAsPdfWithUnicode() {
-        if (typeof window.jspdf === 'undefined') {
-            alert('PDF library not loaded. Please try again.');
-            return;
-        }
+   // REPLACEMENT FUNCTION: Exports a professionally formatted PDF using the correct parser.
+    async function saveAsPdfWithUnicode() {
+        if (typeof window.jspdf === 'undefined') {
+            return alert('PDF library (jspdf) is not loaded. Please try again.');
+        }
 
-        try {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4'
-            });
+        const { jsPDF } = window.jspdf;
+        // Using inches and letter size for industry-standard screenplay formatting
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
 
-            doc.setFont('courier');
-            
-            const scenes = projectData.projectInfo.scenes || [];
-            let y = 50;
-            const lineHeight = 14;
-            const pageHeight = 792;
-            const margin = 72;
-            const pageWidth = 612;
+        // --- Standard Screenplay Layout Constants (in inches) ---
+        const leftMargin = 1.5;
+        const rightMargin = 1.0;
+        const topMargin = 1.0;
+        const bottomMargin = 1.0;
+        const pageHeight = 11.0;
+        const pageWidth = 8.5;
+        const lineHeight = 1 / 6; // 12pt font is 1/6th of an inch high
 
-            // Title page
-            doc.setFontSize(18);
-            doc.text(projectData.projectInfo.projectName || 'Untitled', pageWidth/2, y, { align: 'center' });
-            y += 30;
+        // Element indents from the left margin
+        const indents = {
+            scene_heading: 0,
+            action: 0,
+            character: 2.2,
+            parenthetical: 1.6,
+            dialogue: 1.0,
+        };
+        // How wide each element can be
+        const widths = {
+            scene_heading: 6.0,
+            action: 6.0,
+            character: 2.8,
+            parenthetical: 2.0,
+            dialogue: 3.5,
+        };
 
-            doc.setFontSize(14);
-            doc.text(`by ${projectData.projectInfo.prodName || 'Author'}`, pageWidth/2, y, { align: 'center' });
-            y += 80;
+        // 1. Use our correct parser to get the tokens
+        const tokens = parseFountain(fountainInput.value || '');
+        let y = topMargin;
 
-            doc.setFontSize(12);
+        // Function to handle page breaks
+        const checkPageBreak = (linesCount = 1) => {
+            if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
+                doc.addPage();
+                y = topMargin;
+            }
+        };
 
-            // Scenes
-            scenes.forEach(scene => {
-                if (y > pageHeight - margin) {
-                    doc.addPage();
-                    y = margin;
-                }
+        // 2. Set the font for the entire document
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(12);
 
-                // Scene heading
-                y += lineHeight;
-                if (showSceneNumbers) {
-                    doc.text(`${scene.number}.`, pageWidth - margin - 30, y, { align: 'right' });
-                }
-                doc.text(scene.heading, margin, y);
-                y += lineHeight;
+        // 3. Loop through each token and add it to the PDF
+        tokens.forEach(token => {
+            if (!token.type || !token.text) {
+                if (token.type === 'empty') y += lineHeight; // Handle blank lines
+                return;
+            }
 
-                // Scene description
-                scene.description.forEach(desc => {
-                    if (y > pageHeight - margin) {
-                        doc.addPage();
-                        y = margin;
-                    }
-                    
-                    const actionText = doc.splitTextToSize(desc, 432);
-                    if (Array.isArray(actionText)) {
-                        actionText.forEach((line, index) => {
-                            doc.text(line, margin, y);
-                            if (index < actionText.length - 1) y += lineHeight;
-                        });
-                    } else {
-                        doc.text(actionText, margin, y);
-                    }
-                    y += lineHeight;
-                });
+            // Split text into lines that fit within the element's width
+            const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
 
-                y += lineHeight;
-            });
+            // Add extra spacing before certain elements
+            if (['scene_heading', 'character', 'transition'].includes(token.type)) {
+                checkPageBreak();
+                y += lineHeight;
+            }
+            
+            checkPageBreak(textLines.length);
 
-            doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
-            
-        } catch (error) {
-            console.error('PDF generation failed:', error);
-            alert('Error generating PDF. Please try again.');
-        }
-    }
+            // Set font style (bold for scene headings)
+            doc.setFont('Courier', token.type === 'scene_heading' ? 'bold' : 'normal');
+
+            // Position and add the text
+            if (token.type === 'transition') {
+                doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
+                y += textLines.length * lineHeight;
+            } else {
+                const x = leftMargin + (indents[token.type] || 0);
+                doc.text(textLines, x, y);
+                y += textLines.length * lineHeight;
+            }
+        });
+        
+        // 4. Save the final document
+        doc.save(`${projectData.projectInfo.projectName || 'screenplay'}.pdf`);
+        console.log('📄 PDF generated with correct formatting.');
+    }
 
     function openFountainFile(e) {
         const file = e.target.files[0];
