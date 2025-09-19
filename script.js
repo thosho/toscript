@@ -203,42 +203,80 @@ FADE OUT.`;
         updateAutoSaveIndicator();
     }
 
-    // Enhanced Scene Parsing
-    function extractScenesFromText(text) {
-        if (!text) return [];
-        
-        const lines = text.split('\n');
-        const scenes = [];
-        let currentScene = null;
-        let sceneNumber = 0;
+  // NEW, ROBUST PARSER: Understands Fountain syntax rules.
+    function parseFountain(text) {
+        const lines = text.split('\n');
+        const tokens = [];
+        let sceneCount = 0;
 
-        lines.forEach(line => {
-            const trimmed = line.trim();
-            if (/^(INT\.?\/EXT\.?|INT\.|EXT\.)\s+/i.test(trimmed)) {
-                if (currentScene) scenes.push(currentScene);
-                sceneNumber++;
-                
-                const parts = trimmed.split(' - ');
-                const location = parts[0].trim();
-                const timeOfDay = (parts[1] || 'DAY').trim();
-                
-                currentScene = {
-                    number: sceneNumber,
-                    heading: trimmed.toUpperCase(),
-                    sceneType: location.match(/^(INT\.?\/EXT\.?|INT\.|EXT\.)/i)[0],
-                    location: location.replace(/^(INT\.?\/EXT\.?|INT\.|EXT\.)\s*/i, ''),
-                    timeOfDay: timeOfDay,
-                    description: [],
-                    characters: []
-                };
-            } else if (currentScene && trimmed && !/^[A-Z\s]+$/.test(trimmed)) {
-                currentScene.description.push(trimmed);
-            }
-        });
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmedLine = line.trim();
 
-        if (currentScene) scenes.push(currentScene);
-        return scenes;
-    }
+            // Handle empty lines
+            if (trimmedLine.length === 0) {
+                tokens.push({ type: 'empty' });
+                continue;
+            }
+
+            // Title Page elements (e.g., "Title: My Script")
+            if (/^(Title|Author|Credit|Source):/i.test(trimmedLine)) {
+                tokens.push({ type: 'title_page', text: trimmedLine });
+                continue;
+            }
+
+            // Scene Headings (INT. LOCATION - DAY)
+            if (/^(INT\.?\/EXT\.?|EXT\.?|INT\.)/i.test(trimmedLine)) {
+                sceneCount++;
+                tokens.push({ type: 'scene_heading', text: trimmedLine.toUpperCase(), sceneNumber: sceneCount });
+                continue;
+            }
+
+            // Transitions (FADE OUT., CUT TO:)
+            if (trimmedLine.endsWith('TO:') || /^(FADE (OUT|IN)|CUT|DISSOLVE)/.test(trimmedLine)) {
+                tokens.push({ type: 'transition', text: trimmedLine.toUpperCase() });
+                continue;
+            }
+
+            // Parentheticals ((crying))
+            if (trimmedLine.startsWith('(') && trimmedLine.endsWith(')')) {
+                const lastToken = tokens[tokens.length - 1];
+                // Must follow a character or dialogue
+                if (lastToken && (lastToken.type === 'character' || lastToken.type === 'dialogue')) {
+                    tokens.push({ type: 'parenthetical', text: line }); // Keep original indentation
+                    continue;
+                }
+            }
+            
+            // Character & Dialogue (This is the tricky part)
+            // A line is a CHARACTER if it's all caps and the next non-empty line is NOT all caps
+            if (trimmedLine === trimmedLine.toUpperCase() && !trimmedLine.startsWith('(')) {
+                let nextLineIndex = i + 1;
+                while (nextLineIndex < lines.length && lines[nextLineIndex].trim() === '') {
+                    nextLineIndex++;
+                }
+
+                if (nextLineIndex < lines.length) {
+                    const nextLineTrimmed = lines[nextLineIndex].trim();
+                    if (nextLineTrimmed !== nextLineTrimmed.toUpperCase() || nextLineTrimmed.startsWith('(')) {
+                        tokens.push({ type: 'character', text: line }); // Keep original indentation
+                        continue;
+                    }
+                }
+            }
+
+            // Dialogue (must follow a Character or Parenthetical)
+            const lastToken = tokens.length > 0 ? tokens[tokens.length - 1] : null;
+            if (lastToken && (lastToken.type === 'character' || lastToken.type === 'parenthetical')) {
+                tokens.push({ type: 'dialogue', text: line }); // Keep original indentation
+                continue;
+            }
+
+            // If nothing else matches, it's an Action line
+            tokens.push({ type: 'action', text: line });
+        }
+        return tokens;
+    }
 
     // View Switching
     function switchView(view) {
