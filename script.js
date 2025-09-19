@@ -294,6 +294,7 @@ FADE OUT.`;
             if (scriptHeader) scriptHeader.style.display = 'flex';
             renderEnhancedScript();
         } else if (view === 'card') {
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
             cardView?.classList.add('active');
             if (cardHeader) cardHeader.style.display = 'flex';
             renderEnhancedCardView();
