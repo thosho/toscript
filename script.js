@@ -423,29 +423,57 @@ FADE OUT.`;
         if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
     }
 
-    // FIXED: Enhanced Script Rendering with Black Text
-    function renderEnhancedScript() {
-        if (!screenplayOutput) return;
+    // UPDATED RENDERER: Uses the new parser to create clean HTML.
+    function renderEnhancedScript() {
+        if (!screenplayOutput || !fountainInput) return;
 
-        const scenes = projectData.projectInfo.scenes || [];
-        let scriptHtml = `<div class="title-page">
-            <h1 style="color: black !important;">${projectData.projectInfo.projectName || 'Untitled'}</h1>
-            <p class="author" style="color: black !important;">by ${projectData.projectInfo.prodName || 'Author'}</p>
-        </div>`;
+        const tokens = parseFountain(fountainInput.value || '');
+        let scriptHtml = '';
+        let isTitlePage = true;
 
-        scenes.forEach(scene => {
-            const sceneNum = showSceneNumbers ? `${scene.number}. ` : '';
-            // FIXED: Ensure scene headings are black
-            scriptHtml += `<h3 class="scene-heading" style="color: black !important; font-weight: bold; text-transform: uppercase; margin: 2rem 0 1rem 0;">${sceneNum}${scene.heading}</h3>`;
-            
-            scene.description.forEach(desc => {
-                scriptHtml += `<div class="action" style="color: black !important;">${desc}</div>`;
-            });
-        });
+        tokens.forEach(token => {
+            // Once we hit a scene heading, the title page is over
+            if (token.type === 'scene_heading') {
+                isTitlePage = false;
+            }
 
-        screenplayOutput.innerHTML = scriptHtml;
-        console.log("📄 Script rendered with black text");
-    }
+            switch (token.type) {
+                case 'title_page':
+                    if (isTitlePage) {
+                        // Simple formatting for title elements
+                        scriptHtml += `<div class="title-page-element">${token.text}</div>`;
+                    } else {
+                        // Treat as action if it appears after the first scene
+                        scriptHtml += `<div class="action">${token.text}</div>`;
+                    }
+                    break;
+                case 'scene_heading':
+                    const sceneNum = showSceneNumbers ? `${token.sceneNumber}. ` : '';
+                    scriptHtml += `<div class="scene-heading">${sceneNum}${token.text}</div>`;
+                    break;
+                case 'action':
+                    scriptHtml += `<div class="action">${token.text}</div>`;
+                    break;
+                case 'character':
+                    scriptHtml += `<div class="character">${token.text}</div>`;
+                    break;
+                case 'dialogue':
+                    scriptHtml += `<div class="dialogue">${token.text}</div>`;
+                    break;
+                case 'parenthetical':
+                    scriptHtml += `<div class="parenthetical">${token.text}</div>`;
+                    break;
+                case 'transition':
+                    scriptHtml += `<div class="transition">${token.text}</div>`;
+                    break;
+                case 'empty':
+                    scriptHtml += '<br>';
+                    break;
+            }
+        });
+
+        screenplayOutput.innerHTML = scriptHtml;
+    }
 
     // FIXED: Enhanced Card View with Full Functionality
     function renderEnhancedCardView() {
