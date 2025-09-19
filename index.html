@@ -10,7 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Inter:wght@400;500;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
     
-    <!-- FIXED: Added Fountain.js CDN -->
     <script src="https://cdn.jsdelivr.net/gh/mattdaly/Fountain.js@master/fountain.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -21,7 +20,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Write Mode Header -->
     <header id="main-header" class="page-header write-mode-header">
         <div class="header-left">
             <button id="hamburger-btn" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
@@ -34,7 +32,6 @@
         </div>
     </header>
     
-    <!-- Script Preview Mode Header -->
     <header id="script-header" class="page-header script-mode-header" style="display: none;">
         <div class="header-left">
             <button id="hamburger-btn-script" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
@@ -47,25 +44,22 @@
         </div>
     </header>
     
-    <!-- Card Mode Header -->
-   <!-- Card Mode Header -->
-<header id="card-header" class="page-header card-mode-header" style="display: none;">
-    <div class="header-left">
-        <button id="hamburger-btn-card" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
-    </div>
-    <div class="header-center">
-        <button id="show-write-btn-card-header" class="main-action-btn header-btn wide-btn">TO WRITE</button>
-    </div>
-    <div class="header-right">
-        <!-- FIXED: Added + button back -->
-        <button id="add-new-card-btn" class="icon-btn" title="Add New Scene Card">
-            <i class="fas fa-plus"></i>
-        </button>
-        <button id="save-all-cards-btn" class="icon-btn" title="Save All Cards">
-            <i class="fas fa-download"></i>
-        </button>
-    </div>
-</header>
+    <header id="card-header" class="page-header card-mode-header" style="display: none;">
+        <div class="header-left">
+            <button id="hamburger-btn-card" class="icon-btn" title="Menu"><i class="fas fa-bars"></i></button>
+        </div>
+        <div class="header-center">
+            <button id="show-write-btn-card-header" class="main-action-btn header-btn wide-btn">TO WRITE</button>
+        </div>
+        <div class="header-right">
+            <button id="add-new-card-btn" class="icon-btn" title="Add New Scene Card">
+                <i class="fas fa-plus"></i>
+            </button>
+            <button id="save-all-cards-btn" class="icon-btn" title="Save All Cards">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    </header>
     
     <div id="menu-panel" class="side-menu">
         <nav>
@@ -73,14 +67,15 @@
             <a href="#" id="open-btn"><i class="fas fa-folder-open"></i> Open...</a>
             <a href="#" id="project-info-btn"><i class="fas fa-info-circle"></i> Project Info</a>
             <a href="#" id="title-page-btn"><i class="fas fa-book-open"></i> Title Page</a>
-           <div id="save-menu" class="dropdown-content">
-    <a href="#" id="save-fountain-btn">.fountain (Text)</a>
-
-    <a href="#" id="save-pdf-english-btn">.pdf (Eng)</a>
-    <a href="#" id="save-pdf-unicode-btn">.pdf (Non-Eng)</a>
-
-    <a href="#" id="save-filmproj-btn" class="pro-feature">.filmproj (for To Make/To Sched)</a>
-</div>
+            <div class="dropdown-container">
+                <a href="#" id="save-menu-btn" class="dropdown-toggle"><i class="fas fa-save"></i> Save As...</a>
+                <div id="save-menu" class="dropdown-content">
+                    <a href="#" id="save-fountain-btn">.fountain (Text)</a>
+                    <a href="#" id="save-pdf-english-btn">.pdf (Selectable Text)</a>
+                    <a href="#" id="save-pdf-unicode-btn">.pdf (Unicode Image)</a>
+                    <a href="#" id="save-filmproj-btn" class="pro-feature">.filmproj (for To Make/To Sched)</a>
+                </div>
+            </div>
              <a href="#" id="auto-save-btn" class="flex-between">
                 <span><i class="fas fa-sync-alt"></i> Auto-Save</span>
                 <span id="auto-save-indicator" class="indicator off"></span>
@@ -128,7 +123,6 @@
         </div>
     </main>
     
-    <!-- FIXED: Mobile Keyboard Toolbar - Now shows in fullscreen -->
     <div id="mobile-keyboard-toolbar" class="mobile-keyboard-toolbar">
         <div class="keyboard-toolbar-content">
             <button class="keyboard-btn" data-action="scene" title="I/E">I/E</button>
@@ -139,7 +133,6 @@
         </div>
     </div>
     
-    <!-- FIXED: Enhanced Scene Navigator Panel -->
     <div id="scene-navigator-panel" class="side-panel">
         <div class="panel-header">
             <h2>Navigator & Filters</h2>
@@ -158,7 +151,6 @@
             <div class="panel-subtext" id="filter-help-text" style="display: none;">Enter keywords to filter scenes</div>
         </div>
         
-        <!-- FIXED: Enhanced Reorder Section with Save Button -->
         <div class="panel-section">
             <div class="reorder-header">
                 <h4>Reorder Scenes</h4>
@@ -171,7 +163,6 @@
         </div>
     </div>
     
-    <!-- Modals -->
     <div id="info-modal" class="modal mobile-modal"></div>
     <div id="about-modal" class="modal mobile-modal"></div>
     <div id="title-page-modal" class="modal mobile-modal"></div>
