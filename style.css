@@ -90,6 +90,76 @@ body.fullscreen-active #desktop-side-toolbar {
     justify-content: center;
 }
 
+/* --- SCREENPLAY PREVIEW FORMATTING (THE FIX) --- */
+
+/* 1. The "Page" Container */
+#screenplay-output {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    font-size: 12pt;
+    line-height: 1; /* We will control line height with margins */
+    max-width: 8.5in;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 1in 1in 1in 1.5in; /* Top, Right, Bottom, Left margins */
+    box-sizing: border-box;
+    box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    text-align: left;
+}
+
+/* 2. Reset default spacing for ALL screenplay elements */
+#screenplay-output > div {
+    margin: 0;
+    padding: 0;
+    white-space: pre-wrap; /* Respects line breaks within the element */
+}
+
+/* 3. Industry-Standard Spacing and Indentation */
+.scene-heading {
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 18pt; /* Adds one blank line before a new scene */
+    margin-bottom: 12pt;
+    color: #333; /* Lighter color as requested */
+}
+
+.action {
+    margin-bottom: 12pt; /* Standard single line space after action */
+}
+
+.character {
+    margin-left: 2.2in; /* Indent from the 1.5in left margin */
+    text-transform: uppercase;
+    margin-bottom: 0; /* Dialogue immediately follows */
+    margin-top: 12pt; /* Space before a new character speaks */
+}
+
+.dialogue {
+    margin-left: 1in;
+    margin-right: 1.5in; /* Dialogue block width is ~3.5 inches */
+    margin-bottom: 12pt;
+}
+
+.parenthetical {
+    margin-left: 1.6in;
+    margin-right: 2.1in;
+    margin-bottom: 0; /* Dialogue immediately follows */
+}
+
+.transition {
+    text-align: right;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-top: 18pt;
+    margin-bottom: 12pt;
+}
+
+.title-page-element {
+    text-align: center;
+    margin-bottom: 12pt;
+}
+
 .icon-btn {
     background: none;
     border: none;
