@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoSaveInterval = null;
     let showSceneNumbers = true;
     let currentView = 'write';
+    let debounceTimeout = null; // Add this line
+    
 
     // DOM elements
     const fountainInput = document.getElementById('fountain-input');
@@ -1247,14 +1249,24 @@ async function saveAsPdfUnicode() {
         // Make jumpToScene globally available
         window.jumpToScene = jumpToScene;
 
-        // Fountain input listeners
-        if (fountainInput) {
-            fountainInput.addEventListener('input', () => {
-                history.add(fountainInput.value);
-                saveProjectData();
-                projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-            });
-        }
+       // Fountain input listeners
+if (fountainInput) {
+    fountainInput.addEventListener('input', () => {
+        // These actions happen immediately on every keystroke
+        history.add(fountainInput.value);
+        saveProjectData(); // This also updates the projectData.projectInfo.scenes array
+
+        // Now, we handle the UI update with a debounce to prevent lag
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            // This code runs only after the user has stopped typing for 500ms
+            if (currentView === 'card') {
+                console.log('Syncing text editor changes back to Card View...');
+                renderEnhancedCardView();
+            }
+        }, 500); // 500 millisecond delay
+    });
+}
 
         // File input
         if (fileInput) {
