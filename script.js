@@ -1044,51 +1044,51 @@ async function saveAllCardsAsImages() {
         doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
     }
 
-    // NEW FUNCTION 2: For Unicode/any language, image-based PDF
-    async function saveAsPdfUnicode() {
-        if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-            return alert('Required libraries (jspdf or html2canvas) are not loaded.');
-        }
+    // UPDATED FUNCTION: For Unicode/any language, with a check to ensure libraries are loaded.
+async function saveAsPdfUnicode() {
+    // THIS IS THE FIX: Check if the required libraries are ready before running.
+    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+        return alert('Required libraries are still loading. Please wait a moment and try again.');
+    }
 
-        const sourceElement = document.getElementById('screenplay-output');
-        if (!sourceElement || sourceElement.innerText.trim() === '') {
-            return alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
-        }
+    const sourceElement = document.getElementById('screenplay-output');
+    if (!sourceElement || sourceElement.innerText.trim() === '') {
+        return alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
+    }
 
-        alert('Generating high-quality Unicode PDF, this may take a moment...');
+    alert('Generating high-quality Unicode PDF, this may take a moment...');
 
-        try {
-            const canvas = await html2canvas(sourceElement, {
-                scale: 2, backgroundColor: '#ffffff', useCORS: true,
-            });
+    try {
+        const canvas = await html2canvas(sourceElement, {
+            scale: 2, backgroundColor: '#ffffff', useCORS: true,
+        });
 
-            const imgData = canvas.toDataURL('image/png');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
-            let heightLeft = imgHeightInPdf;
-            let position = 0;
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
+        let heightLeft = imgHeightInPdf;
+        let position = 0;
 
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-            heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+        heightLeft -= pdfHeight;
 
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeightInPdf;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-                heightLeft -= pdfHeight;
-            }
-            
-            pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
-        } catch(error) {
-            console.error("PDF generation failed:", error);
-            alert("An error occurred while creating the Unicode PDF.");
-        }
-    }
-
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeightInPdf;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+            heightLeft -= pdfHeight;
+        }
+        
+        pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
+    } catch(error) {
+        console.error("PDF generation failed:", error);
+        alert("An error occurred while creating the Unicode PDF.");
+    }
+}
     
     function openFountainFile(e) {
         const file = e.target.files[0];
