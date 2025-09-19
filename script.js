@@ -567,84 +567,97 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
         }, 100);
     }
 
-    // FIXED: Save All Cards as Images Function
-    async function saveAllCardsAsImages() {
-        console.log("💾 Saving all cards as images");
-        
-        const cards = document.querySelectorAll('.card-for-export');
-        if (cards.length === 0) {
-            alert('No cards to save.');
-            return;
-        }
+    // FIXED: Enhanced Card Export function to create a print-friendly format
+    async function saveAllCardsAsImages() {
+        console.log("💾 Saving all cards as images with professional index card formatting...");
+        
+        const cards = document.querySelectorAll('.card-for-export');
+        if (cards.length === 0) {
+            alert('No cards to save.');
+            return;
+        }
 
-        let savedCount = 0;
-        
-        for (let i = 0; i < cards.length; i++) {
-            const card = cards[i];
-            
-            try {
-                // Hide action buttons for clean export
-                const actionsDiv = card.querySelector('.card-actions');
-                const originalDisplay = actionsDiv ? actionsDiv.style.display : '';
-                if (actionsDiv) actionsDiv.style.display = 'none';
+        if (typeof html2canvas === 'undefined') {
+            alert('❌ Image generation library (html2canvas) is not loaded. Cannot save cards.');
+            return;
+        }
 
-                let dataUrl;
-                
-                // Use html2canvas if available
-                if (typeof html2canvas !== 'undefined') {
-                    const canvas = await html2canvas(card.querySelector('.scene-card-content'), {
-                        backgroundColor: 'white',
-                        scale: 3,
-                        width: 400,
-                        height: 320,
-                        useCORS: true,
-                        allowTaint: true
-                    });
-                    dataUrl = canvas.toDataURL('image/png', 0.95);
-                } else if (typeof htmlToImage !== 'undefined') {
-                    dataUrl = await htmlToImage.toPng(card.querySelector('.scene-card-content'), {
-                        backgroundColor: 'white',
-                        pixelRatio: 3,
-                        width: 400,
-                        height: 320,
-                        quality: 0.95
-                    });
-                }
-                
-                // Restore action buttons
-                if (actionsDiv) actionsDiv.style.display = originalDisplay;
-                
-                if (dataUrl) {
-                    const sceneNumber = card.dataset.sceneNumber || (i + 1);
-                    const sceneTitle = card.querySelector('.card-scene-title')?.textContent?.trim() || 'Scene';
-                    const cleanTitle = sceneTitle.substring(0, 30).replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-                    const fileName = `Scene_${sceneNumber}_${cleanTitle}.png`;
-                    
-                    // Download
-                    const a = document.createElement('a');
-                    a.href = dataUrl;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    
-                    savedCount++;
-                    
-                    // Small delay between downloads
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                }
-                
-            } catch (error) {
-                console.error(`Failed to save card ${i + 1}:`, error);
-            }
-        }
-        
-        if (savedCount > 0) {
-            alert(`🎉 Successfully saved ${savedCount} scene cards as PNG images!`);
-        } else {
-            alert('❌ Failed to save cards. Make sure html2canvas library is loaded.');
-        }
-    }
+        let savedCount = 0;
+        
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            
+            // 1. Extract data from the visible card
+            const sceneNumber = card.querySelector('.card-scene-number')?.value || `#${i + 1}`;
+            const sceneHeading = card.querySelector('.card-scene-title')?.textContent || 'Untitled Scene';
+            const description = card.querySelector('.card-description')?.value || 'No description.';
+
+            // 2. Create a temporary, hidden element formatted like a real index card
+            const printableCard = document.createElement('div');
+            printableCard.style.cssText = `
+                position: absolute;
+                left: -9999px; /* Position off-screen */
+                width: 480px; /* 5 inches at 96dpi */
+                height: 288px; /* 3 inches at 96dpi */
+                background-color: white;
+                border: 1px solid #888;
+                font-family: 'Courier New', monospace;
+                color: black;
+                padding: 15px;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            `;
+            
+            // 3. Populate the printable card with formatted content
+            // We take just the first few lines of the description for a clean summary
+            const descriptionSummary = description.split('\n').slice(0, 5).join('<br>');
+            
+            printableCard.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
+                    <span style="font-size: 14px; font-weight: bold; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${sceneHeading}</span>
+                    <span style="font-size: 16px; font-weight: bold;">${sceneNumber}</span>
+                </div>
+                <div style="flex-grow: 1; padding-top: 15px; font-size: 15px; line-height: 1.5;">
+                    ${descriptionSummary}
+                </div>
+                <div style="font-size: 10px; text-align: right; opacity: 0.5; margin-top: auto;">@ToscripT</div>
+            `;
+            
+            // 4. Append to body, screenshot it, then remove it
+            document.body.appendChild(printableCard);
+            
+            try {
+                const canvas = await html2canvas(printableCard, { scale: 2 });
+                const dataUrl = canvas.toDataURL('image/png', 0.95);
+
+                // Create a clean filename
+                const cleanTitle = sceneHeading.substring(0, 30).replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+                const fileName = `Scene_${sceneNumber.replace('#', '')}_${cleanTitle}.png`;
+                
+                // Trigger download
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = fileName;
+                a.click();
+                
+                savedCount++;
+                await new Promise(resolve => setTimeout(resolve, 200)); // Small delay between downloads
+                
+            } catch (error) {
+                console.error(`Failed to save card ${i + 1}:`, error);
+            } finally {
+                // IMPORTANT: Clean up by removing the temporary element
+                document.body.removeChild(printableCard);
+            }
+        }
+        
+        if (savedCount > 0) {
+            alert(`🎉 Successfully saved ${savedCount} scene cards as PNG images!`);
+        } else {
+            alert('❌ Failed to save cards. An error occurred during image generation.');
+        }
+    }
 
     // Action buttons handling
     function handleActionBtn(e) {
