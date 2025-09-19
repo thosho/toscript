@@ -470,7 +470,7 @@ FADE OUT.`;
                     scriptHtml += `<div class="transition">${token.text}</div>`;
                     break;
                 case 'empty':
-                    scriptHtml += '<br>';
+                  
                     break;
             }
         });
