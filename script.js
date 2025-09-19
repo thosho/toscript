@@ -567,62 +567,66 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
         }, 100);
     }
 
-  // 1. NEW HELPER FUNCTION: Creates a high-quality, print-formatted card image blob.
-    async function generateCardImageBlob(cardElement) {
-        // Extract data from the on-screen card
-        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
-        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
-        const description = cardElement.querySelector('.card-description')?.value || '';
+  // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
+async function generateCardImageBlob(cardElement) {
+    // Extract data from the on-screen card
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
+    const description = cardElement.querySelector('.card-description')?.value || '';
 
-        // Create a temporary, hidden element styled exactly like the example image
-        const printableCard = document.createElement('div');
-        printableCard.style.cssText = `
-            position: absolute;
-            left: -9999px; /* Position it off-screen */
-            width: 528px; /* 5.5 inches at 96dpi */
-            height: 336px; /* 3.5 inches at 96dpi */
-            background-color: #ffffff;
-            border: 1.5px solid #000000;
-            font-family: 'Courier Prime', 'Courier New', monospace;
-            color: #000000;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        `;
+    // Create a temporary, hidden element styled exactly like a 3x5 index card
+    const printableCard = document.createElement('div');
+    printableCard.style.cssText = `
+        position: absolute;
+        left: -9999px; /* Position it off-screen */
+        width: 480px;  /* 5 inches at 96dpi */
+        height: 288px; /* 3 inches at 96dpi */
+        background-color: #ffffff;
+        border: 1.5px solid #000000;
+        /* --- CHANGED: Set font and make it bolder --- */
+        font-family: 'Courier Prime', 'Courier New', monospace;
+        color: #000000; /* Pure black text */
+        font-weight: 500; /* Make all text slightly bolder to combat rendering lightness */
+        /* ------------------------------------------- */
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    `;
+    
+    // Create a concise summary from the full description
+    const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
+    
+    // Populate the printable card with the correctly formatted HTML
+    printableCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
+            <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
+        </div>
+        <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">
+            ${descriptionSummary}
+        </div>
+        <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">@ToscripT</div>
+    `;
+    
+    document.body.appendChild(printableCard);
 
-        // Create a concise summary from the full description (e.g., first 6 lines)
-        const descriptionSummary = description.split('\n').slice(0, 6).join('<br>');
-
-        // Populate the printable card with the correctly formatted HTML
-        printableCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px;">
-                <span style="font-size: 16px; font-weight: bold;">${sceneHeading}</span>
-                <span style="font-size: 14px;">p.1</span>
-            </div>
-            <div style="flex-grow: 1; padding-top: 15px; font-size: 16px; line-height: 1.6;">
-                ${descriptionSummary}
-            </div>
-        `;
-
-        document.body.appendChild(printableCard);
-
-        return new Promise(async (resolve) => {
-            try {
-                const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/png', 0.95);
-            } catch (error) {
-                console.error("Card image generation failed:", error);
-                resolve(null);
-            } finally {
-                // IMPORTANT: Always remove the temporary element
-                document.body.removeChild(printableCard);
-            }
-        });
-    }
-
+    return new Promise(async (resolve) => {
+        try {
+            const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png', 0.95);
+        } catch (error) {
+            console.error("Card image generation failed:", error);
+            resolve(null);
+        } finally {
+            // IMPORTANT: Always remove the temporary element
+            document.body.removeChild(printableCard);
+        }
+    });
+}
+    
     // 2. REPLACEMENT FUNCTION for sharing a single card
     async function shareSceneCard(sceneId) {
         const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
