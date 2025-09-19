@@ -1044,11 +1044,11 @@ async function saveAllCardsAsImages() {
         doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
     }
 
-    // UPDATED FUNCTION: For Unicode/any language, with a check to ensure libraries are loaded.
+   // FINAL REPLACEMENT: Uses the more modern 'html-to-image' library for guaranteed Unicode support.
 async function saveAsPdfUnicode() {
-    // THIS IS THE FIX: Check if the required libraries are ready before running.
-    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-        return alert('Required libraries are still loading. Please wait a moment and try again.');
+    // Check for the correct libraries before running.
+    if (typeof window.jspdf === 'undefined' || typeof window.htmlToImage === 'undefined') {
+        return alert('Required libraries (jspdf or html-to-image) are still loading. Please wait a moment and try again.');
     }
 
     const sourceElement = document.getElementById('screenplay-output');
@@ -1059,15 +1059,23 @@ async function saveAsPdfUnicode() {
     alert('Generating high-quality Unicode PDF, this may take a moment...');
 
     try {
-        const canvas = await html2canvas(sourceElement, {
-            scale: 2, backgroundColor: '#ffffff', useCORS: true,
+        // THIS IS THE KEY CHANGE: Switched from html2canvas to the more reliable htmlToImage library
+        const imgData = await htmlToImage.toPng(sourceElement, {
+            quality: 0.95,
+            pixelRatio: 2, // Use pixelRatio for better quality
+            backgroundColor: '#ffffff'
         });
 
-        const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+        });
+
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
+        
         const imgProps = pdf.getImageProperties(imgData);
         const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
         let heightLeft = imgHeightInPdf;
@@ -1084,9 +1092,10 @@ async function saveAsPdfUnicode() {
         }
         
         pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
+
     } catch(error) {
-        console.error("PDF generation failed:", error);
-        alert("An error occurred while creating the Unicode PDF.");
+        console.error("PDF generation failed with html-to-image:", error);
+        alert("An error occurred while creating the Unicode PDF. Please check the console for details.");
     }
 }
     
