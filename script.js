@@ -567,95 +567,125 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
         }, 100);
     }
 
-    // FIXED: Enhanced Card Export function to create a print-friendly format
+  // 1. NEW HELPER FUNCTION: Creates a high-quality, print-formatted card image blob.
+    async function generateCardImageBlob(cardElement) {
+        // Extract data from the on-screen card
+        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
+        const description = cardElement.querySelector('.card-description')?.value || '';
+
+        // Create a temporary, hidden element styled exactly like the example image
+        const printableCard = document.createElement('div');
+        printableCard.style.cssText = `
+            position: absolute;
+            left: -9999px; /* Position it off-screen */
+            width: 528px; /* 5.5 inches at 96dpi */
+            height: 336px; /* 3.5 inches at 96dpi */
+            background-color: #ffffff;
+            border: 1.5px solid #000000;
+            font-family: 'Courier Prime', 'Courier New', monospace;
+            color: #000000;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        `;
+
+        // Create a concise summary from the full description (e.g., first 6 lines)
+        const descriptionSummary = description.split('\n').slice(0, 6).join('<br>');
+
+        // Populate the printable card with the correctly formatted HTML
+        printableCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px;">
+                <span style="font-size: 16px; font-weight: bold;">${sceneHeading}</span>
+                <span style="font-size: 14px;">p.1</span>
+            </div>
+            <div style="flex-grow: 1; padding-top: 15px; font-size: 16px; line-height: 1.6;">
+                ${descriptionSummary}
+            </div>
+        `;
+
+        document.body.appendChild(printableCard);
+
+        return new Promise(async (resolve) => {
+            try {
+                const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                }, 'image/png', 0.95);
+            } catch (error) {
+                console.error("Card image generation failed:", error);
+                resolve(null);
+            } finally {
+                // IMPORTANT: Always remove the temporary element
+                document.body.removeChild(printableCard);
+            }
+        });
+    }
+
+    // 2. REPLACEMENT FUNCTION for sharing a single card
+    async function shareSceneCard(sceneId) {
+        const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
+        if (!cardElement) {
+            alert('Could not find the card to share.');
+            return;
+        }
+
+        const blob = await generateCardImageBlob(cardElement);
+        if (!blob) {
+            alert('Failed to create card image.');
+            return;
+        }
+
+        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent || 'Scene';
+        const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+
+        // Use the modern Web Share API if available (great for mobile)
+        if (navigator.share && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: sceneHeading,
+                    text: `Scene card from ToscripT: ${sceneHeading}`,
+                });
+            } catch (error) {
+                console.log('Share was cancelled or failed:', error);
+            }
+        } else {
+            // Fallback to simple download if Web Share is not supported
+            downloadBlob(blob, fileName);
+        }
+    }
+
+    // 3. REPLACEMENT FUNCTION for saving all cards
     async function saveAllCardsAsImages() {
-        console.log("💾 Saving all cards as images with professional index card formatting...");
-        
         const cards = document.querySelectorAll('.card-for-export');
         if (cards.length === 0) {
             alert('No cards to save.');
             return;
         }
 
-        if (typeof html2canvas === 'undefined') {
-            alert('❌ Image generation library (html2canvas) is not loaded. Cannot save cards.');
-            return;
-        }
-
         let savedCount = 0;
-        
+        alert(`Preparing to save ${cards.length} cards. This may take a moment...`);
+
         for (let i = 0; i < cards.length; i++) {
-            const card = cards[i];
-            
-            // 1. Extract data from the visible card
-            const sceneNumber = card.querySelector('.card-scene-number')?.value || `#${i + 1}`;
-            const sceneHeading = card.querySelector('.card-scene-title')?.textContent || 'Untitled Scene';
-            const description = card.querySelector('.card-description')?.value || 'No description.';
-
-            // 2. Create a temporary, hidden element formatted like a real index card
-            const printableCard = document.createElement('div');
-            printableCard.style.cssText = `
-                position: absolute;
-                left: -9999px; /* Position off-screen */
-                width: 480px; /* 5 inches at 96dpi */
-                height: 288px; /* 3 inches at 96dpi */
-                background-color: white;
-                border: 1px solid #888;
-                font-family: 'Courier New', monospace;
-                color: black;
-                padding: 15px;
-                display: flex;
-                flex-direction: column;
-                box-sizing: border-box;
-            `;
-            
-            // 3. Populate the printable card with formatted content
-            // We take just the first few lines of the description for a clean summary
-            const descriptionSummary = description.split('\n').slice(0, 5).join('<br>');
-            
-            printableCard.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #ccc; padding-bottom: 8px;">
-                    <span style="font-size: 14px; font-weight: bold; max-width: 80%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${sceneHeading}</span>
-                    <span style="font-size: 16px; font-weight: bold;">${sceneNumber}</span>
-                </div>
-                <div style="flex-grow: 1; padding-top: 15px; font-size: 15px; line-height: 1.5;">
-                    ${descriptionSummary}
-                </div>
-                <div style="font-size: 10px; text-align: right; opacity: 0.5; margin-top: auto;">@ToscripT</div>
-            `;
-            
-            // 4. Append to body, screenshot it, then remove it
-            document.body.appendChild(printableCard);
-            
-            try {
-                const canvas = await html2canvas(printableCard, { scale: 2 });
-                const dataUrl = canvas.toDataURL('image/png', 0.95);
-
-                // Create a clean filename
-                const cleanTitle = sceneHeading.substring(0, 30).replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
-                const fileName = `Scene_${sceneNumber.replace('#', '')}_${cleanTitle}.png`;
-                
-                // Trigger download
-                const a = document.createElement('a');
-                a.href = dataUrl;
-                a.download = fileName;
-                a.click();
-                
+            const blob = await generateCardImageBlob(cards[i]);
+            if (blob) {
+                const sceneNumber = cards[i].querySelector('.card-scene-number')?.value || `#${i+1}`;
+                const sceneHeading = cards[i].querySelector('.card-scene-title')?.textContent || 'Scene';
+                const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+                downloadBlob(blob, fileName);
                 savedCount++;
-                await new Promise(resolve => setTimeout(resolve, 200)); // Small delay between downloads
-                
-            } catch (error) {
-                console.error(`Failed to save card ${i + 1}:`, error);
-            } finally {
-                // IMPORTANT: Clean up by removing the temporary element
-                document.body.removeChild(printableCard);
+                await new Promise(resolve => setTimeout(resolve, 200)); // Brief pause
             }
         }
-        
+
         if (savedCount > 0) {
-            alert(`🎉 Successfully saved ${savedCount} scene cards as PNG images!`);
+            alert(`🎉 Download complete! ${savedCount} scene cards saved.`);
         } else {
-            alert('❌ Failed to save cards. An error occurred during image generation.');
+            alert('❌ Failed to save cards. An error occurred.');
         }
     }
 
