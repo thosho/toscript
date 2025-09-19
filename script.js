@@ -590,48 +590,30 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
         }
     }
 
-    // FIXED: Add New Scene Card Function
-    function addNewSceneCard() {
-        console.log("➕ Adding new scene card");
-        
-        if (!fountainInput) return;
-        
-        const currentScenes = projectData.projectInfo.scenes || [];
-        const newSceneNumber = currentScenes.length + 1;
-        const newSceneText = `\n\nINT. NEW LOCATION - DAY\n\nScene description goes here...\n`;
-        
-        // Add to the end of current script
-        const currentValue = fountainInput.value || '';
-        fountainInput.value = currentValue + newSceneText;
-        
-        // Update history and save
-        history.add(fountainInput.value);
-        saveProjectData();
-        
-        // Re-render card view
-        projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-        renderEnhancedCardView();
-        
-        // Focus on the new card
-        setTimeout(() => {
-            const cards = document.querySelectorAll('.scene-card');
-            const lastCard = cards[cards.length - 1];
-            if (lastCard) {
-                const titleElement = lastCard.querySelector('.card-scene-title');
-                if (titleElement) {
-                    titleElement.focus();
-                    // Select all text
-                    if (window.getSelection) {
-                        const selection = window.getSelection();
-                        const range = document.createRange();
-                        range.selectNodeContents(titleElement);
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    }
-                }
-            }
-        }, 100);
+   // REPLACEMENT FUNCTION: Correctly adds a new scene and refreshes the Card View.
+function addNewSceneCard() {
+    if (!fountainInput) return;
+    
+    console.log("➕ Adding new scene card");
+    
+    // Add a new, blank scene to the end of the current script text
+    const newSceneText = `\n\nINT. NEW SCENE - DAY\n\nDescription for the new scene.\n`;
+    fountainInput.value += newSceneText;
+    
+    // Update the app's data with the new content
+    history.add(fountainInput.value);
+    saveProjectData();
+    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+    
+    // Re-render the card view to show the new card
+    renderEnhancedCardView();
+    
+    // Scroll to the bottom of the card view to see the new card
+    const cardContainer = document.getElementById('card-container');
+    if (cardContainer) {
+        cardContainer.scrollTop = cardContainer.scrollHeight;
     }
+}
 
   // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
 async function generateCardImageBlob(cardElement) {
@@ -1044,11 +1026,23 @@ async function saveAllCardsAsImages() {
         doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
     }
 
-   // FINAL REPLACEMENT: Uses the more modern 'html-to-image' library for guaranteed Unicode support.
+    async function preloadResourcesForCanvas() {
+    try {
+        console.log("Preloading fonts for PDF generation...");
+        // This command waits for all fonts in the document to be loaded and ready
+        await document.fonts.ready;
+        console.log("Fonts preloaded successfully.");
+    } catch (error) {
+        console.error("Error preloading fonts:", error);
+        // Don't block the process, but warn the user it might fail.
+        alert("Could not preload fonts, PDF export may have issues.");
+    }
+}
+
+    // FINAL REPLACEMENT: Uses the preloading function to guarantee Unicode support.
 async function saveAsPdfUnicode() {
-    // Check for the correct libraries before running.
-    if (typeof window.jspdf === 'undefined' || typeof window.htmlToImage === 'undefined') {
-        return alert('Required libraries (jspdf or html-to-image) are still loading. Please wait a moment and try again.');
+    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+        return alert('Required libraries are still loading. Please wait a moment and try again.');
     }
 
     const sourceElement = document.getElementById('screenplay-output');
@@ -1057,25 +1051,24 @@ async function saveAsPdfUnicode() {
     }
 
     alert('Generating high-quality Unicode PDF, this may take a moment...');
-
+    
     try {
-        // THIS IS THE KEY CHANGE: Switched from html2canvas to the more reliable htmlToImage library
-        const imgData = await htmlToImage.toPng(sourceElement, {
-            quality: 0.95,
-            pixelRatio: 2, // Use pixelRatio for better quality
-            backgroundColor: '#ffffff'
+        // **THIS IS THE FIX**: Wait for fonts to be ready before capturing.
+        await preloadResourcesForCanvas();
+
+        const canvas = await html2canvas(sourceElement, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false // Suppress console logs from the library
         });
 
+        const imgData = canvas.toDataURL('image/png', 0.97);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-            orientation: 'portrait',
-            unit: 'pt',
-            format: 'a4'
-        });
-
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
-        
         const imgProps = pdf.getImageProperties(imgData);
         const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
         let heightLeft = imgHeightInPdf;
@@ -1092,13 +1085,13 @@ async function saveAsPdfUnicode() {
         }
         
         pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
-
-    } catch(error) {
-        console.error("PDF generation failed with html-to-image:", error);
-        alert("An error occurred while creating the Unicode PDF. Please check the console for details.");
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        alert("An error occurred while creating the Unicode PDF. This can sometimes happen with very complex scripts.");
     }
 }
-    
+
+    
     function openFountainFile(e) {
         const file = e.target.files[0];
         if (!file) return;
