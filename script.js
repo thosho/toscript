@@ -590,29 +590,57 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
         }
     }
 
-   // REPLACEMENT FUNCTION: Correctly adds a new scene and refreshes the Card View.
+ // REPLACEMENT FUNCTION: Directly adds a new card and syncs it back to the main editor.
 function addNewSceneCard() {
-    if (!fountainInput) return;
-    
-    console.log("➕ Adding new scene card");
-    
-    // Add a new, blank scene to the end of the current script text
-    const newSceneText = `\n\nINT. NEW SCENE - DAY\n\nDescription for the new scene.\n`;
-    fountainInput.value += newSceneText;
-    
-    // Update the app's data with the new content
-    history.add(fountainInput.value);
-    saveProjectData();
-    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-    
-    // Re-render the card view to show the new card
-    renderEnhancedCardView();
-    
-    // Scroll to the bottom of the card view to see the new card
     const cardContainer = document.getElementById('card-container');
-    if (cardContainer) {
-        cardContainer.scrollTop = cardContainer.scrollHeight;
+    if (!cardContainer) {
+        console.error("Card container not found!");
+        return;
     }
+
+    // 1. Determine the new scene number based on existing cards
+    const newSceneNumber = cardContainer.querySelectorAll('.scene-card').length + 1;
+
+    // 2. Create the HTML for a new, blank card
+    const newCardHtml = `
+        <div class="scene-card card-for-export" data-scene-id="${newSceneNumber}" data-scene-number="${newSceneNumber}">
+            <div class="scene-card-content">
+                <div class="card-header">
+                    <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">INT. NEW SCENE - DAY</div>
+                    <input class="card-scene-number" type="text" value="#${newSceneNumber}" maxlength="4" data-scene-id="${newSceneNumber}" />
+                </div>
+                <div class="card-body">
+                    <textarea class="card-description" placeholder="Enter detailed scene description..." data-scene-id="${newSceneNumber}"></textarea>
+                </div>
+                <div class="card-watermark">@TO SCRIPT</div>
+            </div>
+            <div class="card-actions">
+                <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="${newSceneNumber}">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // 3. Add the new card HTML to the end of the container
+    cardContainer.insertAdjacentHTML('beforeend', newCardHtml);
+
+    // 4. Find the newly created card
+    const newCardElement = cardContainer.lastElementChild;
+    if (newCardElement) {
+        // 5. Scroll to the new card and focus its title field
+        newCardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const titleElement = newCardElement.querySelector('.card-scene-title');
+        if (titleElement) {
+            titleElement.focus();
+        }
+    }
+    
+    // 6. IMPORTANT: Sync this new card back to the main script text
+    syncCardsToEditor();
+    
+    // 7. Re-bind events to make sure the new card's fields work
+    bindCardEditingEvents();
 }
 
   // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
