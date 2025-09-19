@@ -663,36 +663,71 @@ async function generateCardImageBlob(cardElement) {
         }
     }
 
-    // 3. REPLACEMENT FUNCTION for saving all cards
-    async function saveAllCardsAsImages() {
-        const cards = document.querySelectorAll('.card-for-export');
-        if (cards.length === 0) {
-            alert('No cards to save.');
-            return;
-        }
+    // REPLACEMENT FUNCTION: Exports all cards into a single, print-friendly PDF.
+async function saveAllCardsAsImages() {
+    console.log("📄 Generating PDF for all scene cards...");
+    
+    // 1. Check for necessary libraries
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+        alert('❌ PDF generation library is not loaded. Cannot create PDF.');
+        return;
+    }
 
-        let savedCount = 0;
-        alert(`Preparing to save ${cards.length} cards. This may take a moment...`);
+    const cards = document.querySelectorAll('.card-for-export');
+    if (cards.length === 0) {
+        alert('No cards to save.');
+        return;
+    }
 
-        for (let i = 0; i < cards.length; i++) {
-            const blob = await generateCardImageBlob(cards[i]);
-            if (blob) {
-                const sceneNumber = cards[i].querySelector('.card-scene-number')?.value || `#${i+1}`;
-                const sceneHeading = cards[i].querySelector('.card-scene-title')?.textContent || 'Scene';
-                const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-                downloadBlob(blob, fileName);
-                savedCount++;
-                await new Promise(resolve => setTimeout(resolve, 200)); // Brief pause
-            }
-        }
+    alert(`Preparing to generate a PDF with ${cards.length} cards. This may take a moment...`);
 
-        if (savedCount > 0) {
-            alert(`🎉 Download complete! ${savedCount} scene cards saved.`);
-        } else {
-            alert('❌ Failed to save cards. An error occurred.');
-        }
-    }
+    // 2. Initialize the PDF document (A4 size, units in millimeters)
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
+    // 3. Define the layout for the cards on the page
+    const cardWidthMM = 127;  // 5 inches
+    const cardHeightMM = 76;   // 3 inches
+    const pageHeightMM = 297;  // A4 page height
+    const pageWidthMM = 210;   // A4 page width
+    const topMarginMM = 15;
+    const leftMarginMM = (pageWidthMM - (cardWidthMM * 1)) / 2; // Centering one card per row
+    const gapMM = 15;          // Space between cards vertically for cutting
+
+    let x = leftMarginMM;
+    let y = topMarginMM;
+
+    try {
+        for (let i = 0; i < cards.length; i++) {
+            // 4. Generate the image data for each card using our existing helper function
+            const blob = await generateCardImageBlob(cards[i]);
+            if (!blob) continue; // Skip if a card fails to generate
+
+            const dataUrl = URL.createObjectURL(blob);
+
+            // 5. Check if the card will fit on the current page. If not, add a new page.
+            if (y + cardHeightMM > pageHeightMM - topMarginMM) {
+                doc.addPage();
+                y = topMarginMM; // Reset Y position to the top margin
+            }
+
+            // 6. Add the card image to the PDF at the calculated position
+            doc.addImage(dataUrl, 'PNG', x, y, cardWidthMM, cardHeightMM);
+            URL.revokeObjectURL(dataUrl); // Clean up memory
+
+            // 7. Update the Y position for the next card to be placed below the current one
+            y += cardHeightMM + gapMM;
+        }
+
+        // 8. Save the completed PDF file
+        doc.save('ToscripT_All_Cards.pdf');
+        alert(`🎉 PDF created successfully with ${cards.length} cards!`);
+
+    } catch (error) {
+        console.error("Failed to generate PDF:", error);
+        alert("An error occurred while creating the PDF. Please check the console for details.");
+    }
+}
     // Action buttons handling
     function handleActionBtn(e) {
         if (!fountainInput) return;
