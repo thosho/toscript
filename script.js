@@ -425,6 +425,47 @@ FADE OUT.`;
         if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
     }
 
+// **FIXED**: This function now correctly uses the Fountain.js library to get scene data.
+    function extractScenesFromText(text) {
+        if (typeof fountain === 'undefined' || !text) return [];
+        try {
+            const parsed = fountain.parse(text);
+            const scenes = [];
+            let currentScene = null;
+            let sceneNumber = 0;
+
+            parsed.tokens.forEach(token => {
+                if (token.type === 'scene_heading') {
+                    if (currentScene) scenes.push(currentScene); // Save the previous scene
+                    sceneNumber++;
+                    const parts = token.text.split(' - ');
+                    currentScene = {
+                        number: sceneNumber,
+                        heading: token.text,
+                        description: [],
+                        location: parts[0] || '',
+                        timeOfDay: parts[1] || 'DAY',
+                        characters: new Set()
+                    };
+                } else if (currentScene) {
+                    if (token.type === 'character') {
+                        currentScene.characters.add(token.text);
+                    }
+                    if (['action', 'dialogue', 'parenthetical'].includes(token.type) && token.text.trim()) {
+                        currentScene.description.push(token.text.trim());
+                    }
+                }
+            });
+            if (currentScene) scenes.push(currentScene); // Push the last scene
+            scenes.forEach(scene => scene.characters = Array.from(scene.characters));
+            return scenes;
+        } catch (e) {
+            console.error("Error extracting scenes:", e);
+            return []; // Return empty on error
+        }
+    }
+
+    
     // UPDATED RENDERER: Uses the new parser to create clean HTML.
     function renderEnhancedScript() {
         if (!screenplayOutput || !fountainInput) return;
