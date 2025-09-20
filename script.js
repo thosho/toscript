@@ -1321,24 +1321,43 @@ async function saveAsPdfUnicode() {
         // Make jumpToScene globally available
         window.jumpToScene = jumpToScene;
 
-       // Fountain input listeners
+       // COMPLETE BIDIRECTIONAL SYNC - SAFE VERSION
 if (fountainInput) {
     fountainInput.addEventListener('input', () => {
-        // These actions happen immediately on every keystroke
+        // Immediate actions on every keystroke
         history.add(fountainInput.value);
-        saveProjectData(); // This also updates the projectData.projectInfo.scenes array
-
-        // Now, we handle the UI update with a debounce to prevent lag
+        saveProjectData();
+        
+        // Debounced actions after user stops typing
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-            // This code runs only after the user has stopped typing for 500ms
-            if (currentView === 'card') {
-                console.log('Syncing text editor changes back to Card View...');
-                renderEnhancedCardView();
+            console.log("🔄 Auto-sync triggered...");
+            
+            // Parse scenes from current text
+            try {
+                projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+                
+                // Update based on current view
+                if (currentView === 'card') {
+                    console.log("📋 Refreshing Card View...");
+                    renderEnhancedCardView();
+                    bindCardEditingEvents();
+                } else if (currentView === 'script') {
+                    console.log("📄 Refreshing Script Preview...");
+                    renderEnhancedScript();
+                }
+                
+                // Always update scene navigator
+                updateSceneNavigator();
+                
+                console.log(`✅ Sync complete: ${projectData.projectInfo.scenes.length} scenes`);
+            } catch (error) {
+                console.error("Sync error:", error);
             }
-        }, 500); // 500 millisecond delay
+        }, 800); // Increased delay to prevent lag
     });
 }
+
 
         // File input
         if (fileInput) {
