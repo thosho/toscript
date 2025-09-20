@@ -1679,16 +1679,33 @@ if (fountainInput) {
         history.add(fountainInput ? fountainInput.value : '');
         history.updateButtons();
 
-        console.log('✅ ToscripT Professional initialized successfully!');
-        console.log('📱 Mobile toolbar fixed for fullscreen mode');
-        console.log('🎭 Scene navigator with drag/drop and scene numbers');  
-        console.log('💾 Scene order export functionality');
-        console.log('🔍 Enhanced filtering with DAY/NIGHT support');
-        console.log('🎞️ Card view with + button and save all cards');
-        console.log('🖼️ Black text in preview mode fixed');
-        console.log('🎬 ALL FEATURES WORKING - ToscripT Professional Ready! 🎬');
-       }
+        // TEMPORARY DEBUG CODE - Add at the very end
+console.log("🔍 DEBUGGING CARD VIEW ISSUE");
+
+// Test if functions exist
+console.log("extractScenesFromText function:", typeof extractScenesFromText);
+console.log("renderEnhancedCardView function:", typeof renderEnhancedCardView);
+console.log("switchView function:", typeof switchView);
+
+// Test fountain input content
+console.log("Fountain input element:", fountainInput);
+console.log("Fountain content:", fountainInput ? fountainInput.value : "INPUT NOT FOUND");
+
+// Test card view button
+const cardViewBtn = document.getElementById('card-view-btn');
+console.log("Card view button:", cardViewBtn);
+
+// Add click test
+if (cardViewBtn) {
+    cardViewBtn.addEventListener('click', () => {
+        console.log("🎬 CARD VIEW BUTTON CLICKED!");
+        console.log("Current view before:", currentView);
+        console.log("Fountain content:", fountainInput.value);
+    });
+}
+
 
     // Start initialization after a short delay to ensure DOM is ready
     setTimeout(initialize, 100);
 });
+
