@@ -480,53 +480,75 @@ function parseFountain(input) {
     }
 
 // UPDATED RENDERER: Uses the new parser to create clean HTML.
-    function renderEnhancedScript() {
-        if (!screenplayOutput || !fountainInput) return;
+   // FIXED: Enhanced script rendering with proper scene numbering
+function renderEnhancedScript() {
+    if (!screenplayOutput || !fountainInput) return;
 
-        const tokens = parseFountain(fountainInput.value);
-        let scriptHtml = '';
-        let isTitlePage = true;
+    const text = fountainInput.value;
+    const lines = text.split('\n');
+    let scriptHtml = '';
+    let sceneCount = 0;
+    let inDialogue = false;
 
-        tokens.forEach(token => {
-            // Once we hit a scene heading, the title page is over
-            if (token.type === 'sceneheading') isTitlePage = false;
+    for(let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const nextLine = (i + 1 < lines.length) ? lines[i+1].trim() : null;
 
-            switch (token.type) {
-                case 'titlepage':
-                    if (isTitlePage) {
-                        // Simple formatting for title elements
-                        scriptHtml += `<div class="title-page-element">${token.text}</div>`;
-                    } else {
-                        // Treat as action if it appears after the first scene
-                        scriptHtml += `<div class="action">${token.text}</div>`;
-                    }
-                    break;
-                case 'sceneheading':
-                    const sceneNum = showSceneNumbers ? `${token.sceneNumber}. ` : '';
-                    scriptHtml += `<div class="scene-heading">${sceneNum}${token.text}</div>`;
-                    break;
-                case 'action':
-                    scriptHtml += `<div class="action">${token.text}</div>`;
-                    break;
-                case 'character':
-                    scriptHtml += `<div class="character">${token.text}</div>`;
-                    break;
-                case 'dialogue':
-                    scriptHtml += `<div class="dialogue">${token.text}</div>`;
-                    break;
-                case 'parenthetical':
-                    scriptHtml += `<div class="parenthetical">${token.text}</div>`;
-                    break;
-                case 'transition':
-                    scriptHtml += `<div class="transition">${token.text}</div>`;
-                    break;
-                case 'empty':
-                    break;
-            }
-        });
+        if (!line) {
+            scriptHtml += '<div class="empty-line"></div>';
+            inDialogue = false;
+            continue;
+        }
 
-        screenplayOutput.innerHTML = scriptHtml;
+        // Title page elements  
+        if (/^(TITLE|AUTHOR|CREDIT|SOURCE):/i.test(line)) {
+            scriptHtml += `<div class="title-page-element">${line}</div>`;
+            inDialogue = false;
+            continue;
+        }
+
+        // Scene headings with proper numbering
+        if (line.toUpperCase().startsWith('INT.') || line.toUpperCase().startsWith('EXT.')) {
+            sceneCount++;
+            const sceneNum = showSceneNumbers ? `${sceneCount}. ` : '';
+            scriptHtml += `<div class="scene-heading">${sceneNum}${line.toUpperCase()}</div>`;
+            inDialogue = false;
+            continue;
+        }
+
+        // Transitions
+        if (line.toUpperCase().endsWith('TO:') || line.toUpperCase() === 'FADE OUT.' || line.toUpperCase() === 'FADE IN:' || line.toUpperCase() === 'FADE TO BLACK:') {
+            scriptHtml += `<div class="transition">${line.toUpperCase()}</div>`;
+            inDialogue = false;
+            continue;
+        }
+
+        // Character names (all caps with next line)
+        if (line === line.toUpperCase() && !line.startsWith('!') && line.length > 0 && nextLine) {
+            scriptHtml += `<div class="character">${line}</div>`;
+            inDialogue = true;
+            continue;
+        }
+
+        // Parentheticals in dialogue
+        if (inDialogue && line.startsWith('(')) {
+            scriptHtml += `<div class="parenthetical">${line}</div>`;
+            continue;
+        }
+
+        // Dialogue
+        if (inDialogue) {
+            scriptHtml += `<div class="dialogue">${line}</div>`;
+            continue;
+        }
+
+        // Action (everything else)
+        scriptHtml += `<div class="action">${line}</div>`;
     }
+
+    screenplayOutput.innerHTML = scriptHtml;
+}
+
 
     
     // FIXED: Enhanced Card View with Full Functionality
