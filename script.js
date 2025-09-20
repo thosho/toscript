@@ -425,7 +425,11 @@ FADE OUT.`;
         if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
     }
 
-// **FIXED**: This function now correctly uses the Fountain.js library to get scene data.
+// =======================================================================
+    // START OF REPLACEMENT BLOCK
+    // =======================================================================
+
+    // **FIXED**: This function now correctly uses the Fountain.js library to get scene data.
     function extractScenesFromText(text) {
         if (typeof fountain === 'undefined' || !text) return [];
         try {
@@ -465,67 +469,29 @@ FADE OUT.`;
         }
     }
 
-    
-    // UPDATED RENDERER: Uses the new parser to create clean HTML.
-    function renderEnhancedScript() {
-        if (!screenplayOutput || !fountainInput) return;
+    // **FIXED**: This function now correctly uses the Fountain.js library for rendering.
+    function renderEnhancedScript() {
+        if (!screenplayOutput || !fountainInput) return;
+        if (typeof fountain === 'undefined') {
+            screenplayOutput.innerHTML = `<div class="action" style="color: red; padding: 2rem;">Error: Fountain.js formatting library did not load. Please check your internet connection and refresh.</div>`;
+            return;
+        }
+        try {
+            const parsedOutput = fountain.parse(fountainInput.value);
+            screenplayOutput.innerHTML = parsedOutput.html.script;
+        } catch (e) {
+            console.error("Fountain.js parsing error:", e);
+            screenplayOutput.innerHTML = `<div class="action" style="color: red; padding: 2rem;">Error parsing script syntax.</div>`;
+        }
+    }
 
-        const tokens = parseFountain(fountainInput.value || '');
-        let scriptHtml = '';
-        let isTitlePage = true;
-
-        tokens.forEach(token => {
-            // Once we hit a scene heading, the title page is over
-            if (token.type === 'scene_heading') {
-                isTitlePage = false;
-            }
-
-            switch (token.type) {
-                case 'title_page':
-                    if (isTitlePage) {
-                        // Simple formatting for title elements
-                        scriptHtml += `<div class="title-page-element">${token.text}</div>`;
-                    } else {
-                        // Treat as action if it appears after the first scene
-                        scriptHtml += `<div class="action">${token.text}</div>`;
-                    }
-                    break;
-                case 'scene_heading':
-                    const sceneNum = showSceneNumbers ? `${token.sceneNumber}. ` : '';
-                    scriptHtml += `<div class="scene-heading">${sceneNum}${token.text}</div>`;
-                    break;
-                case 'action':
-                    scriptHtml += `<div class="action">${token.text}</div>`;
-                    break;
-                case 'character':
-                    scriptHtml += `<div class="character">${token.text}</div>`;
-                    break;
-                case 'dialogue':
-                    scriptHtml += `<div class="dialogue">${token.text}</div>`;
-                    break;
-                case 'parenthetical':
-                    scriptHtml += `<div class="parenthetical">${token.text}</div>`;
-                    break;
-                case 'transition':
-                    scriptHtml += `<div class="transition">${token.text}</div>`;
-                    break;
-                case 'empty':
-                    scriptHtml += '<br>';
-                    break;
-            }
-        });
-
-        screenplayOutput.innerHTML = scriptHtml;
-    }
-
-    // FIXED: Enhanced Card View with Full Functionality
+    // This is your original `renderEnhancedCardView` function, which is correct.
     function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer) return;
 
-        const scenes = projectData.projectInfo.scenes || [];
-        
-        if (scenes.length === 0) {
+        const scenes = projectData.projectInfo.scenes;
+        if (!scenes || scenes.length === 0) {
             cardContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--muted-text-color);">
                     <i class="fas fa-film" style="font-size: 4rem; margin-bottom: 2rem; opacity: 0.3;"></i>
@@ -543,13 +509,7 @@ FADE OUT.`;
                         <input class="card-scene-number" type="text" value="#${scene.number}" maxlength="4" data-scene-id="${scene.number}" />
                     </div>
                     <div class="card-body">
-                        <textarea class="card-description" placeholder="Enter detailed scene description...
-
-Characters:
-Actions:
-Props:
-Locations:
-Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')}</textarea>
+                        <textarea class="card-description" placeholder="Enter detailed scene description...">${scene.description.join('\n\n')}</textarea>
                     </div>
                     <div class="card-watermark">@TO SCRIPT</div>
                 </div>
@@ -560,11 +520,13 @@ Special Notes:" data-scene-id="${scene.number}">${scene.description.join('\n\n')
                 </div>
             </div>
         `).join('');
-
-        // Bind card editing events
+        
         bindCardEditingEvents();
     }
 
+    // =======================================================================
+    // END OF REPLACEMENT BLOCK
+    // =======================================================================
     // Card editing functionality
     function bindCardEditingEvents() {
         const cardContainer = document.getElementById('card-container');
