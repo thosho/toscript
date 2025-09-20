@@ -1286,3 +1286,34 @@ textarea::-webkit-scrollbar-thumb,
     background-color: var(--border-color);
     border-radius: 20px;
 }
+
+/* --- SCENE NAVIGATOR LIST STYLES --- */
+#scene-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+    height: calc(100% - 100px); /* Adjust height as needed */
+    overflow-y: auto;
+}
+
+#scene-list li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: grab;
+    transition: background-color 0.2s ease;
+    user-select: none; /* Prevents text selection while dragging */
+}
+
+#scene-list li:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Style for the item being dragged */
+.dragging {
+    opacity: 0.5;
+    background: #4f46e5 !important; /* Force a highlight color */
+}
