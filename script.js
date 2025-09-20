@@ -1122,51 +1122,52 @@ async function preloadResourcesForCanvas() {
 
 async function saveAsPdfUnicode() {
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-        alert('Required libraries (jsPDF or html2canvas) not loaded. Check console and script tags.');
+        alert('PDF libraries not loaded. Please check your internet connection.');
         return;
     }
-    const sourceElement = document.getElementById('screenplay-output');
-    if (!sourceElement || sourceElement.innerText.trim() === '') {
-        alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
-        return;
-    }
-    alert('Generating high-quality Unicode PDF, this may take a moment...');
 
-    await preloadResourcesForCanvas();
+    const sourceElement = document.getElementById('screenplay-output');
+    if (!sourceElement || !sourceElement.innerText.trim()) {
+        alert('Nothing to save. Please switch to script view first.');
+        return;
+    }
+
+    alert('Generating PDF, please wait...');
 
     try {
         const canvas = await html2canvas(sourceElement, {
             scale: 2,
-            backgroundColor: '#ffffff',
-            useCORS: true,
-            logging: false // Suppress console logs from the library
+            backgroundColor: '#ffffff'
         });
-        const imgData = canvas.toDataURL('image/png', 0.97);
+
+        const imgData = canvas.toDataURL('image/png');
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdf = new jsPDF('portrait', 'pt', 'a4');
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         const imgProps = pdf.getImageProperties(imgData);
-        const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
+        const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-        let heightLeft = imgHeightInPdf;
-        let position = 0;
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-        heightLeft -= pdfHeight;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, imgHeight);
 
-        while (heightLeft > 0) {
-            position -= pdfHeight; // Corrected positioning for multi-page
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-            heightLeft -= pdfHeight;
+        if (imgHeight > pdfHeight) {
+            let heightLeft = imgHeight - pdfHeight;
+            let position = -pdfHeight;
+            
+            while (heightLeft > 0) {
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                heightLeft -= pdfHeight;
+                position -= pdfHeight;
+            }
         }
 
-        pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
-        console.log('Unicode Image PDF exported.');
+        pdf.save(`${projectData.projectInfo.projectName}_unicode.pdf`);
+        alert('✅ Unicode PDF exported!');
     } catch (error) {
-        console.error("PDF generation failed:", error);
-        alert("An error occurred while creating the Unicode PDF. Check console for details.");
+        alert('❌ Failed to generate PDF.');
+        console.error(error);
     }
 }
 
