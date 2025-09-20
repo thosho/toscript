@@ -702,62 +702,60 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-   // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
-// This matches your original printing style as shown in the screenshot (bold heading, scene number, monospaced text, watermark).
-
+    // RESTORED: generateCardImageBlob - Clones the real card for exact layout matching your original print style
 async function generateCardImageBlob(cardElement) {
-    // Extract data from the on-screen card
-    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
-    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
-    const description = cardElement.querySelector('.card-description')?.value || '';
-
-    // Create a temporary, hidden element styled exactly like a 3x5 index card
-    const printableCard = document.createElement('div');
-    printableCard.style.cssText = `
-        position: absolute;
-        left: -9999px;  // Position it off-screen
-        width: 480px;    // 5 inches at 96dpi
-        height: 288px;   // 3 inches at 96dpi
-        background-color: #ffffff;
-        border: 1.5px solid #000000;
-        --- CHANGED: Set font and make it bolder ---
-        font-family: 'Courier Prime', 'Courier New', monospace;
-        color: #000000;  // Pure black text
-        font-weight: 500; // Make all text slightly bolder to combat rendering lightness
-        ------------------------------------------- 
-        padding: 15px;
-        display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
-    `;
-
-    // Create a concise summary from the full description
-    const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
-
-    // Populate the printable card with the correctly formatted HTML
-    printableCard.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
-            <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
-            <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
-        </div>
-        <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">${descriptionSummary}</div>
-        <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">ToscripT</div>
-    `;
-
-    document.body.appendChild(printableCard);
-
-    return new Promise(async resolve => {
-        try {
-            const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
-            canvas.toBlob(blob => resolve(blob), 'image/png', 0.95);
-        } catch (error) {
-            console.error('Card image generation failed', error);
-            resolve(null);
-        } finally {
-            // IMPORTANT: Always remove the temporary element
-            document.body.removeChild(printableCard);
-        }
-    });
+    // Clone the actual card element to capture exact on-screen styling (from your CSS)
+    const clone = cardElement.cloneNode(true);
+    
+    // Remove interactive elements not needed in print (e.g., buttons, actions)
+    const actions = clone.querySelector('.card-actions');
+    if (actions) actions.remove();
+    
+    // Adjust clone for print: offscreen, full size, white background, black text
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.width = '480px';  // 5 inches at 96dpi for print
+    clone.style.height = '288px'; // 3 inches at 96dpi
+    clone.style.backgroundColor = '#ffffff';
+    clone.style.color = '#000000';
+    clone.style.border = '2px solid #000000';
+    clone.style.padding = '15px';
+    clone.style.boxSizing = 'border-box';
+    clone.style.fontFamily = "'Courier Prime', 'Courier New', monospace";
+    clone.style.fontSize = '13px';
+    clone.style.lineHeight = '1.5';
+    
+    // Ensure watermark is visible but subtle
+    const watermark = clone.querySelector('.card-watermark');
+    if (watermark) {
+        watermark.style.color = 'rgba(0,0,0,0.3)';
+        watermark.style.position = 'absolute';
+        watermark.style.bottom = '8px';
+        watermark.style.right = '12px';  // Position like in your screenshot
+        watermark.style.fontSize = '10px';
+    }
+    
+    // Append clone to body for rendering
+    document.body.appendChild(clone);
+    
+    // Wait for fonts to load to avoid rendering issues
+    await document.fonts.ready;
+    
+    try {
+        // Capture with html2canvas at high scale for print quality
+        const canvas = await html2canvas(clone, {
+            scale: 3,  // High resolution for sharp print
+            backgroundColor: '#ffffff',
+            logging: false
+        });
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+    } catch (error) {
+        console.error('Card image generation failed:', error);
+        return null;
+    } finally {
+        // Clean up
+        document.body.removeChild(clone);
+    }
 }
 
 
