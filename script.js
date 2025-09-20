@@ -1708,4 +1708,3 @@ if (cardViewBtn) {
     // Start initialization after a short delay to ensure DOM is ready
     setTimeout(initialize, 100);
 });
-
