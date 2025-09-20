@@ -203,78 +203,64 @@ FADE OUT.`;
         updateAutoSaveIndicator();
     }
 
-    // NEW, ROBUST PARSER: Understands Fountain syntax rules.
-    function parseFountain(text) {
-        const lines = text.split('\n');
-        const tokens = [];
-        let sceneCount = 0;
+    // WORKING CODE ONE PARSER - Replace your parseFountain function with this
+function parseFountain(input) {
+    if (input === placeholderText || !input.trim()) {
+        return [];
+    }
+    const lines = input.split('\n');
+    const tokens = [];
+    let inDialogue = false;
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            const trimmedLine = line.trim();
+    for(let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        const nextLine = (i + 1 < lines.length) ? lines[i+1].trim() : null;
 
-            // Handle empty lines
-            if (trimmedLine.length === 0) {
-                tokens.push({ type: 'empty' });
-                continue;
-            }
-
-            // Title Page elements (e.g., Title: My Script)
-            if (/^(Title|Author|Credit|Source):/i.test(trimmedLine)) {
-                tokens.push({ type: 'titlepage', text: trimmedLine });
-                continue;
-            }
-
-            // Scene Headings: INT. LOCATION - DAY
-            if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i.test(trimmedLine)) {
-                sceneCount++;
-                tokens.push({ type: 'sceneheading', text: trimmedLine.toUpperCase(), sceneNumber: sceneCount });
-                continue;
-            }
-
-            // Transitions: FADE OUT., CUT TO:
-            if (trimmedLine.endsWith('TO:') || /^(FADE OUT|FADE IN|CUT TO|DISSOLVE TO)\.?$/i.test(trimmedLine)) {
-                tokens.push({ type: 'transition', text: trimmedLine.toUpperCase() });
-                continue;
-            }
-
-            // Parentheticals: (crying)
-            if (trimmedLine.startsWith('(') && trimmedLine.endsWith(')')) {
-                const lastToken = tokens[tokens.length - 1];
-                // Must follow a character or dialogue
-                if (lastToken && (lastToken.type === 'character' || lastToken.type === 'dialogue')) {
-                    tokens.push({ type: 'parenthetical', text: line }); // Keep original indentation
-                    continue;
-                }
-            }
-
-            // Character / Dialogue: This is the tricky part
-            // A line is a CHARACTER if it's all caps and the next non-empty line is NOT all caps
-            if (trimmedLine === trimmedLine.toUpperCase() && !trimmedLine.startsWith('(')) {
-                let nextLineIndex = i + 1;
-                while (nextLineIndex < lines.length && !lines[nextLineIndex].trim()) nextLineIndex++;
-                if (nextLineIndex < lines.length) {
-                    const nextLineTrimmed = lines[nextLineIndex].trim();
-                    if (nextLineTrimmed && nextLineTrimmed !== nextLineTrimmed.toUpperCase() && !nextLineTrimmed.startsWith('(')) {
-                        tokens.push({ type: 'character', text: line }); // Keep original indentation
-                        continue;
-                    }
-                }
-            }
-
-            // Dialogue must follow a Character or Parenthetical
-            const lastToken = tokens.length > 0 ? tokens[tokens.length - 1] : null;
-            if (lastToken && (lastToken.type === 'character' || lastToken.type === 'parenthetical')) {
-                tokens.push({ type: 'dialogue', text: line }); // Keep original indentation
-                continue;
-            }
-
-            // If nothing else matches, it's an Action line
-            tokens.push({ type: 'action', text: line });
+        if (!line) {
+            tokens.push({ type: 'empty' });
+            inDialogue = false;
+            continue;
         }
 
-        return tokens;
+        // Scene headings
+        if (line.toUpperCase().startsWith('INT.') || line.toUpperCase().startsWith('EXT.')) {
+            tokens.push({ type: 'sceneheading', text: line.toUpperCase() });
+            inDialogue = false;
+            continue;
+        }
+
+        // Transitions
+        if (line.toUpperCase().endsWith('TO:') || line.toUpperCase() === 'FADE OUT.' || line.toUpperCase() === 'FADE IN:' || line.toUpperCase() === 'FADE TO BLACK:') {
+            tokens.push({ type: 'transition', text: line.toUpperCase() });
+            inDialogue = false;
+            continue;
+        }
+
+        // Character names (all caps with next line)
+        if (line === line.toUpperCase() && !line.startsWith('!') && line.length > 0 && nextLine) {
+            tokens.push({ type: 'character', text: line });
+            inDialogue = true;
+            continue;
+        }
+
+        // Parentheticals in dialogue
+        if (inDialogue && line.startsWith('(')) {
+            tokens.push({ type: 'parenthetical', text: line });
+            continue;
+        }
+
+        // Dialogue
+        if (inDialogue) {
+            tokens.push({ type: 'dialogue', text: line });
+            continue;
+        }
+
+        // Action (everything else)
+        tokens.push({ type: 'action', text: line });
     }
+
+    return tokens;
+}
 
     // Patch: Enhanced extractScenesFromText for Better Handling of Deletions and Orphans
     function extractScenesFromText(text) {
