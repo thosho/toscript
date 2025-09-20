@@ -133,35 +133,17 @@
         </div>
     </div>
     
-    <div id="scene-navigator-panel" class="side-panel">
-        <div class="panel-header">
-            <h2>Navigator & Filters</h2>
-            <button id="close-navigator-btn" class="icon-btn">&times;</button>
-        </div>
-        <div class="panel-section">
-            <h4>Filter Script</h4>
-            <select id="filter-category-select">
-                <option value="all">Show All Scenes</option>
-                <option value="sceneSetting">Scene Setting</option>
-                <option value="sceneType">INT./EXT.</option> 
-                <option value="cast">Character</option>
-                <option value="timeOfDay">Time of Day</option>
-            </select>
-            <input type="text" id="filter-value-input" placeholder="Type to filter..." style="display: none;">
-            <div class="panel-subtext" id="filter-help-text" style="display: none;">Enter keywords to filter scenes</div>
-        </div>
-        
-        <div class="panel-section">
-            <div class="reorder-header">
-                <h4>Reorder Scenes</h4>
-                <button id="export-scene-order-btn" class="export-btn" title="Export Scene Order">
-                    <i class="fas fa-download"></i> Save Order
-                </button>
-            </div>
-            <p class="panel-subtext">Drag to reorder scenes • Click to jump</p>
-            <ul id="scene-list"></ul>
-        </div>
+   <div id="scene-navigator-panel" class="side-panel">
+    <div class="panel-header">
+        <h2>Scene Navigator</h2>
+        <button id="close-navigator-btn" class="icon-btn">&times;</button>
     </div>
+    <div class="panel-section">
+        <p class="panel-subtext">Drag to reorder scenes. Click to jump to a scene in the editor.</p>
+        <ul id="scene-list">
+            </ul>
+    </div>
+</div>
     
     <div id="info-modal" class="modal mobile-modal"></div>
     <div id="about-modal" class="modal mobile-modal"></div>
