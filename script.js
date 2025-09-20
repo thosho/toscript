@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🎬 ToscripT Professional - Final Consolidated & Fixed Version");
+    console.log("🎬 ToscripT Professional - Full Version Restored & Fixed");
 
     // --- GLOBAL STATE ---
     let projectData = {
@@ -63,18 +63,8 @@ FADE OUT.`;
                 this.updateButtons();
             }
         },
-        undo() {
-            if (this.currentIndex > 0) {
-                this.currentIndex--;
-                this.updateInput();
-            }
-        },
-        redo() {
-            if (this.currentIndex < this.stack.length - 1) {
-                this.currentIndex++;
-                this.updateInput();
-            }
-        },
+        undo() { if (this.currentIndex > 0) { this.currentIndex--; this.updateInput(); } },
+        redo() { if (this.currentIndex < this.stack.length - 1) { this.currentIndex++; this.updateInput(); } },
         updateInput() {
             if (fountainInput) {
                 fountainInput.value = this.stack[this.currentIndex] || '';
@@ -87,8 +77,9 @@ FADE OUT.`;
             document.querySelectorAll('#redo-btn-top').forEach(btn => btn.disabled = this.currentIndex >= this.stack.length - 1);
         }
     };
-
+    
     // --- CORE APP & VIEW LOGIC ---
+
     function setPlaceholder() {
         if (fountainInput && fountainInput.value.trim() === '') {
             fountainInput.value = placeholderText;
@@ -142,8 +133,7 @@ FADE OUT.`;
             screenplayOutput.innerHTML = `<div class="action" style="color: red; padding: 2rem;">Error parsing script. Please check your syntax.</div>`;
         }
     }
-
-    // **FIXED**: This function now uses the reliable Fountain.js library to get scene data.
+    
     function extractScenesFromText(text) {
         if (typeof fountain === 'undefined' || !text) return [];
         try {
@@ -182,8 +172,8 @@ FADE OUT.`;
             return [];
         }
     }
-
-    // --- PDF & IMAGE EXPORT (Both methods fixed) ---
+    
+    // --- PDF & IMAGE EXPORT ---
 
     async function preloadResourcesForCanvas() {
         try {
@@ -195,7 +185,7 @@ FADE OUT.`;
             alert("Could not preload fonts, PDF export may have issues.");
         }
     }
-
+    
     async function saveAsPdfUnicode() {
         if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
             return alert('Required libraries are still loading. Please wait a moment and try again.');
@@ -298,6 +288,20 @@ FADE OUT.`;
         updateSceneNoIndicator();
         updateAutoSaveIndicator();
     }
+    
+    function openFountainFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            fountainInput.value = e.target.result;
+            clearPlaceholder();
+            history.add(fountainInput.value);
+            saveProjectData();
+            switchView('write');
+        };
+        reader.readAsText(file);
+    }
 
     function handleZoomIn() {
         fontSize = Math.min(32, fontSize + 2);
@@ -312,13 +316,11 @@ FADE OUT.`;
     function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
         if (!cardContainer) return;
-
         const scenes = projectData.projectInfo.scenes;
         if (!scenes || scenes.length === 0) {
             cardContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--muted-text-color);"><i class="fas fa-film" style="font-size: 4rem; margin-bottom: 2rem; opacity: 0.3;"></i><h3>No scenes found</h3><p>Write some scenes in the editor to see them here.</p></div>`;
             return;
         }
-
         cardContainer.innerHTML = scenes.map(scene => `
             <div class="scene-card card-for-export" data-scene-id="${scene.number}" data-scene-number="${scene.number}">
                 <div class="scene-card-content">
@@ -332,7 +334,7 @@ FADE OUT.`;
                     <div class="card-watermark">@TO SCRIPT</div>
                 </div>
                 <div class="card-actions">
-                    <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="${scene.number}"><i class="fas fa-share-alt"></i></button>
+                    <button class="icon-btn share-card-btn" title="Share Scene"><i class="fas fa-share-alt"></i></button>
                 </div>
             </div>`).join('');
         bindCardEditingEvents();
@@ -395,11 +397,10 @@ FADE OUT.`;
             }
         }
     }
-
-    function hideMobileToolbar() {
-         if (mobileToolbar) mobileToolbar.classList.remove('show');
-    }
     
+    function hideMobileToolbar() { if (mobileToolbar) mobileToolbar.classList.remove('show'); }
+    function showMobileToolbar() { if (mobileToolbar && window.innerWidth <= 768) { mobileToolbar.classList.add('show'); } }
+
     function updateSceneNoIndicator() {
         const indicator = document.getElementById('scene-no-indicator');
         if (indicator) indicator.classList.toggle('on', showSceneNumbers);
@@ -426,19 +427,6 @@ FADE OUT.`;
             alert('Auto-save enabled (every 2 minutes)');
         }
         updateAutoSaveIndicator();
-    }
-
-    function openFountainFile(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            fountainInput.value = e.target.result;
-            clearPlaceholder();
-            history.add(fountainInput.value);
-            saveProjectData();
-        };
-        reader.readAsText(file);
     }
 
     function cycleText(textarea, options) {
@@ -494,9 +482,11 @@ FADE OUT.`;
         document.body.addEventListener('click', (e) => {
             const target = e.target.closest('button[id], a[id]');
             if (!target) return;
-
-            if (target.closest('.dropdown-content, .side-menu nav')) {
-                 menuPanel.classList.remove('open');
+            
+            if (target.closest('.dropdown-content') || target.closest('.side-menu nav')) {
+                const dropdown = document.querySelector('.dropdown-container.open');
+                if(dropdown) dropdown.classList.remove('open');
+                menuPanel.classList.remove('open');
             }
 
             const id = target.id;
@@ -509,6 +499,9 @@ FADE OUT.`;
                 'hamburger-btn': () => menuPanel.classList.toggle('open'),
                 'hamburger-btn-script': () => menuPanel.classList.toggle('open'),
                 'hamburger-btn-card': () => menuPanel.classList.toggle('open'),
+                'scene-navigator-btn': () => { updateSceneNavigator(); sceneNavigatorPanel.classList.add('open'); },
+                'scene-navigator-btn-script': () => { updateSceneNavigator(); sceneNavigatorPanel.classList.add('open'); },
+                'close-navigator-btn': () => sceneNavigatorPanel.classList.remove('open'),
                 'save-pdf-english-btn': saveAsPdfEnglish,
                 'save-pdf-unicode-btn': saveAsPdfUnicode,
                 'add-new-card-btn': addNewSceneCard,
@@ -521,7 +514,7 @@ FADE OUT.`;
                 'scene-no-btn': toggleSceneNumbers,
                 'auto-save-btn': toggleAutoSave,
                 'clear-project-btn': () => { if (confirm('This will clear the entire project. Are you sure?')) { fountainInput.value = ''; history.stack = [""]; history.currentIndex = 0; history.updateButtons(); saveProjectData(); setPlaceholder(); switchView('write'); } },
-                // ... any other buttons with IDs ...
+                'save-menu-btn': () => target.parentElement.classList.toggle('open')
             };
 
             if (actions[id]) {
@@ -530,9 +523,7 @@ FADE OUT.`;
             }
         });
 
-        // Event listeners for elements without IDs
         document.querySelectorAll('.action-btn, .keyboard-btn').forEach(btn => btn.addEventListener('click', handleActionBtn));
-
         fountainInput.addEventListener('focus', clearPlaceholder);
         fountainInput.addEventListener('blur', setPlaceholder);
         fountainInput.addEventListener('input', () => {
@@ -546,7 +537,6 @@ FADE OUT.`;
                 }
             }, 500);
         });
-        
         fileInput.addEventListener('change', openFountainFile);
     }
 
