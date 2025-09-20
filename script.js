@@ -1,5 +1,4 @@
-// ToscripT Professional - YOUR ORIGINAL WORKING VERSION WITH MINIMAL FIXES
-// Only fixed PDF exports, FilmProj, and bidirectional sync - ALL BUTTONS WORK
+// ToscripT Professional - Complete Fixed Version with Button Fixes
 
 document.addEventListener('DOMContentLoaded', () => {
     // Global variables
@@ -226,7 +225,7 @@ FADE OUT.`;
             }
 
             // Scene Headings: INT. LOCATION - DAY
-            if (/^(INT\.|EXT\.|INT\.\\/EXT\.|EXT\.\\/INT\.)/i.test(trimmedLine)) {
+            if (/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i.test(trimmedLine)) {
                 sceneCount++;
                 tokens.push({ type: 'sceneheading', text: trimmedLine.toUpperCase(), sceneNumber: sceneCount });
                 continue;
@@ -292,14 +291,14 @@ FADE OUT.`;
                 sceneNumber++;
                 const heading = token.text.toUpperCase();
                 // Extract scene type (INT./EXT.)
-                const sceneTypeMatch = heading.match(/(INT\.|EXT\.|INT\.\\/EXT\.|EXT\.\\/INT\.)/i);
+                const sceneTypeMatch = heading.match(/(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i);
                 const sceneType = sceneTypeMatch ? sceneTypeMatch[1] : 'INT.';
                 // Extract time of day
                 const timeMatch = heading.match(/-(DAY|NIGHT|MORNING|EVENING|DAWN|DUSK|CONTINUOUS|LATER|MOMENTS LATER)/i);
                 const timeOfDay = timeMatch ? timeMatch[1] : 'DAY';
                 // Extract location (everything between scene type and time)
                 let location = heading
-                    .replace(/(INT\.|EXT\.|INT\.\\/EXT\.|EXT\.\\/INT\.)/i, '')
+                    .replace(/(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i, '')
                     .replace(/-(DAY|NIGHT|MORNING|EVENING|DAWN|DUSK|CONTINUOUS|LATER|MOMENTS LATER)/i, '')
                     .trim();
                 if (!location) location = 'LOCATION';
@@ -348,42 +347,43 @@ FADE OUT.`;
     }
 
     function syncAll(fromViewSwitch = false) {
-        projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-        if (currentView === 'card') {
-            renderEnhancedCardView();
-        }
-        if (fromViewSwitch) { // Only rebuild text when switching views
-            syncCardsToEditor();
-        }
-        saveProjectData();
-        console.log('Synced text and cards');
+    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+    if (currentView === 'card') {
+        renderEnhancedCardView();
     }
+    if (fromViewSwitch) { // Only rebuild text when switching views
+        syncCardsToEditor();
+    }
+    saveProjectData();
+    console.log('Synced text and cards');
+}
 
     function switchView(view) {
-        console.log(`Switching to view: ${view}`);
-        currentView = view;
-        [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
-        [mainHeader, scriptHeader, cardHeader].forEach(h => h && (h.style.display = 'none'));
-        hideMobileToolbar();
+    console.log(`Switching to view: ${view}`);
+    currentView = view;
+    [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
+    [mainHeader, scriptHeader, cardHeader].forEach(h => h && (h.style.display = 'none'));
+    hideMobileToolbar();
 
-        if (view === 'script') {
-            scriptView?.classList.add('active');
-            if (scriptHeader) scriptHeader.style.display = 'flex';
-            renderEnhancedScript();
-        } else if (view === 'card') {
-            syncAll(true); // Pass true for full sync on switch
-            cardView?.classList.add('active');
-            if (cardHeader) cardHeader.style.display = 'flex';
-            renderEnhancedCardView();
-        } else {
-            writeView?.classList.add('active');
-            if (mainHeader) mainHeader.style.display = 'flex';
-            setTimeout(() => {
-                if (fountainInput) fountainInput.focus();
-                if (window.innerWidth < 768 && currentView === 'write') showMobileToolbar();
-            }, 200);
-        }
+    if (view === 'script') {
+        scriptView?.classList.add('active');
+        if (scriptHeader) scriptHeader.style.display = 'flex';
+        renderEnhancedScript();
+    } else if (view === 'card') {
+        syncAll(true); // Pass true for full sync on switch
+        cardView?.classList.add('active');
+        if (cardHeader) cardHeader.style.display = 'flex';
+        renderEnhancedCardView();
+    } else {
+        writeView?.classList.add('active');
+        if (mainHeader) mainHeader.style.display = 'flex';
+        setTimeout(() => {
+            if (fountainInput) fountainInput.focus();
+            if (window.innerWidth < 768 && currentView === 'write') showMobileToolbar();
+        }, 200);
     }
+}
+
 
     // Filter functionality
     function handleFilterChange() {
@@ -557,7 +557,7 @@ FADE OUT.`;
                 </div>
             `;
             return;
-        }
+       4
 
         cardContainer.innerHTML = scenes.map(scene => `
                 <div class="scene-card card-for-export" data-scene-id="${scene.number}" data-scene-number="${scene.number}">
@@ -582,8 +582,9 @@ FADE OUT.`;
                 </div>
             `).join('');
 
-        // Bind card editing events
-        bindCardEditingEvents();
+            // Bind card editing events
+            bindCardEditingEvents();
+        }
     }
 
     // Card editing functionality
@@ -614,43 +615,38 @@ FADE OUT.`;
         }
     }
 
-    // FIXED: Bidirectional sync between cards and editor
     function syncCardsToEditor() {
-        const cardContainer = document.getElementById('card-container');
-        if (!cardContainer || !fountainInput) return;
+    const cardContainer = document.getElementById('card-container');
+    if (!cardContainer || !fountainInput) return;
 
-        let scriptText = '';
-        const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
-        cards.forEach((card, index) => {
-            const titleElement = card.querySelector('.card-scene-title');
-            const descriptionElement = card.querySelector('.card-description');
-            let title = titleElement ? titleElement.textContent.trim() : '';
-            let description = descriptionElement ? descriptionElement.value.trim() : '';
+    let scriptText = '';
+    const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
+    cards.forEach((card, index) => {
+        const titleElement = card.querySelector('.card-scene-title');
+        const descriptionElement = card.querySelector('.card-description');
+        let title = titleElement ? titleElement.textContent.trim() : '';
+        let description = descriptionElement ? descriptionElement.value.trim() : '';
 
-            if (title && !title.match(/(INT\.|EXT\.|INT\.\\/EXT\.|EXT\.\\/INT\.)/i)) {
-                title = 'INT. ' + title.toUpperCase();
-            } else {
-                title = title.toUpperCase();
-            }
-
-            const numberElement = card.querySelector('.card-scene-number');
-            if (numberElement) numberElement.value = index + 1;
-
-            scriptText += title + '\n';
-            if (description) scriptText += description + '\n\n';
-        });
-
-        const trimmedScript = scriptText.trim();
-        if (trimmedScript !== fountainInput.value.trim() && trimmedScript !== '') { // Avoid setting to empty
-            fountainInput.value = trimmedScript;
-            history.add(fountainInput.value);
-            saveProjectData();
-            // Update script view if active
-            if (currentView === 'script') {
-                renderEnhancedScript();
-            }
+        if (title && !title.match(/(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i)) {
+            title = 'INT. ' + title.toUpperCase();
+        } else {
+            title = title.toUpperCase();
         }
+
+        const numberElement = card.querySelector('.card-scene-number');
+        if (numberElement) numberElement.value = index + 1;
+
+        scriptText += title + '\n';
+        if (description) scriptText += description + '\n\n';
+    });
+
+    const trimmedScript = scriptText.trim();
+    if (trimmedScript !== fountainInput.value.trim() && trimmedScript !== '') { // Avoid setting to empty
+        fountainInput.value = trimmedScript;
+        history.add(fountainInput.value);
+        saveProjectData();
     }
+}
 
     // REPLACEMENT FUNCTION: Directly adds a new card and syncs it back to the main editor.
     function addNewSceneCard() {
@@ -706,167 +702,167 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-    // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
-    async function generateCardImageBlob(cardElement) {
-        // Extract data from the on-screen card
-        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
-        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
-        const description = cardElement.querySelector('.card-description')?.value || '';
+ // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
+async function generateCardImageBlob(cardElement) {
+    // Extract data from the on-screen card
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
+    const description = cardElement.querySelector('.card-description')?.value || '';
 
-        // Create a temporary, hidden element styled exactly like a 3x5 index card
-        const printableCard = document.createElement('div');
-        printableCard.style.cssText = `
-            position: absolute;
-            left: -9999px; /* Position it off-screen */
-            width: 480px;  /* 5 inches at 96dpi */
-            height: 288px; /* 3 inches at 96dpi */
-            background-color: #ffffff;
-            border: 1.5px solid #000000;
-            /* --- CHANGED: Set font and make it bolder --- */
-            font-family: 'Courier Prime', 'Courier New', monospace;
-            color: #000000; /* Pure black text */
-            font-weight: 500; /* Make all text slightly bolder to combat rendering lightness */
-            /* ------------------------------------------- */
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        `;
+    // Create a temporary, hidden element styled exactly like a 3x5 index card
+    const printableCard = document.createElement('div');
+    printableCard.style.cssText = `
+        position: absolute;
+        left: -9999px; /* Position it off-screen */
+        width: 480px;  /* 5 inches at 96dpi */
+        height: 288px; /* 3 inches at 96dpi */
+        background-color: #ffffff;
+        border: 1.5px solid #000000;
+        /* --- CHANGED: Set font and make it bolder --- */
+        font-family: 'Courier Prime', 'Courier New', monospace;
+        color: #000000; /* Pure black text */
+        font-weight: 500; /* Make all text slightly bolder to combat rendering lightness */
+        /* ------------------------------------------- */
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    `;
+    
+    // Create a concise summary from the full description
+    const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
+    
+    // Populate the printable card with the correctly formatted HTML
+    printableCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
+            <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
+        </div>
+        <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">
+            ${descriptionSummary}
+        </div>
+        <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">@ToscripT</div>
+    `;
+    
+    document.body.appendChild(printableCard);
 
-        // Create a concise summary from the full description
-        const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
-
-        // Populate the printable card with the correctly formatted HTML
-        printableCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
-                <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
-            </div>
-            <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">
-                ${descriptionSummary}
-            </div>
-            <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">@ToscripT</div>
-        `;
-
-        document.body.appendChild(printableCard);
-
-        return new Promise(async (resolve) => {
-            try {
-                const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
-                canvas.toBlob((blob) => {
-                    resolve(blob);
-                }, 'image/png', 0.95);
-            } catch (error) {
-                console.error("Card image generation failed:", error);
-                resolve(null);
-            } finally {
-                // IMPORTANT: Always remove the temporary element
-                document.body.removeChild(printableCard);
-            }
-        });
-    }
-
-    // 2. REPLACEMENT FUNCTION for sharing a single card
-    async function shareSceneCard(sceneId) {
-        const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
-        if (!cardElement) {
-            alert('Could not find the card to share.');
-            return;
-        }
-
-        const blob = await generateCardImageBlob(cardElement);
-        if (!blob) {
-            alert('Failed to create card image.');
-            return;
-        }
-
-        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
-        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent || 'Scene';
-        const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-
-        // Use the modern Web Share API if available (great for mobile)
-        if (navigator.share && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: sceneHeading,
-                    text: `Scene card from ToscripT: ${sceneHeading}`,
-                });
-            } catch (error) {
-                console.log('Share was cancelled or failed:', error);
-            }
-        } else {
-            // Fallback to simple download if Web Share is not supported
-            downloadBlob(blob, fileName);
-        }
-    }
-
-    // REPLACEMENT FUNCTION: Exports all cards into a single, print-friendly PDF.
-    async function saveAllCardsAsImages() {
-        console.log("📄 Generating PDF for all scene cards...");
-
-        // 1. Check for necessary libraries
-        if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-            alert('❌ PDF generation library is not loaded. Cannot create PDF.');
-            return;
-        }
-
-        const cards = document.querySelectorAll('.card-for-export');
-        if (cards.length === 0) {
-            alert('No cards to save.');
-            return;
-        }
-
-        alert(`Preparing to generate a PDF with ${cards.length} cards. This may take a moment...`);
-
-        // 2. Initialize the PDF document (A4 size, units in millimeters)
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-        // 3. Define the layout for the cards on the page
-        const cardWidthMM = 127;  // 5 inches
-        const cardHeightMM = 76;   // 3 inches
-        const pageHeightMM = 297;  // A4 page height
-        const pageWidthMM = 210;   // A4 page width
-        const topMarginMM = 15;
-        const leftMarginMM = (pageWidthMM - (cardWidthMM * 1)) / 2; // Centering one card per row
-        const gapMM = 15;          // Space between cards vertically for cutting
-
-        let x = leftMarginMM;
-        let y = topMarginMM;
-
+    return new Promise(async (resolve) => {
         try {
-            for (let i = 0; i < cards.length; i++) {
-                // 4. Generate the image data for each card using our existing helper function
-                const blob = await generateCardImageBlob(cards[i]);
-                if (!blob) continue; // Skip if a card fails to generate
+            const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png', 0.95);
+        } catch (error) {
+            console.error("Card image generation failed:", error);
+            resolve(null);
+        } finally {
+            // IMPORTANT: Always remove the temporary element
+            document.body.removeChild(printableCard);
+        }
+    });
+}
+    
+Â  Â  // 2. REPLACEMENT FUNCTION for sharing a single card
+Â  Â  async function shareSceneCard(sceneId) {
+Â  Â  Â  Â  const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
+Â  Â  Â  Â  if (!cardElement) {
+Â  Â  Â  Â  Â  Â  alert('Could not find the card to share.');
+Â  Â  Â  Â  Â  Â  return;
+Â  Â  Â  Â  }
 
-                const dataUrl = URL.createObjectURL(blob);
+Â  Â  Â  Â  const blob = await generateCardImageBlob(cardElement);
+Â  Â  Â  Â  if (!blob) {
+Â  Â  Â  Â  Â  Â  alert('Failed to create card image.');
+Â  Â  Â  Â  Â  Â  return;
+Â  Â  Â  Â  }
 
-                // 5. Check if the card will fit on the current page. If not, add a new page.
-                if (y + cardHeightMM > pageHeightMM - topMarginMM) {
-                    doc.addPage();
-                    y = topMarginMM; // Reset Y position to the top margin
-                }
+Â  Â  Â  Â  const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+Â  Â  Â  Â  const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent || 'Scene';
+Â  Â  Â  Â  const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
 
-                // 6. Add the card image to the PDF at the calculated position
-                doc.addImage(dataUrl, 'PNG', x, y, cardWidthMM, cardHeightMM);
-                URL.revokeObjectURL(dataUrl); // Clean up memory
+Â  Â  Â  Â  // Use the modern Web Share API if available (great for mobile)
+Â  Â  Â  Â  if (navigator.share && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+Â  Â  Â  Â  Â  Â  const file = new File([blob], fileName, { type: 'image/png' });
+Â  Â  Â  Â  Â  Â  try {
+Â  Â  Â  Â  Â  Â  Â  Â  await navigator.share({
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  files: [file],
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  title: sceneHeading,
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  text: `Scene card from ToscripT: ${sceneHeading}`,
+Â  Â  Â  Â  Â  Â  Â  Â  });
+Â  Â  Â  Â  Â  Â  } catch (error) {
+Â  Â  Â  Â  Â  Â  Â  Â  console.log('Share was cancelled or failed:', error);
+Â  Â  Â  Â  Â  Â  }
+Â  Â  Â  Â  } else {
+Â  Â  Â  Â  Â  Â  // Fallback to simple download if Web Share is not supported
+Â  Â  Â  Â  Â  Â  downloadBlob(blob, fileName);
+Â  Â  Â  Â  }
+Â  Â  }
 
-                // 7. Update the Y position for the next card to be placed below the current one
-                y += cardHeightMM + gapMM;
+Â  Â  // REPLACEMENT FUNCTION: Exports all cards into a single, print-friendly PDF.
+async function saveAllCardsAsImages() {
+    console.log("ðŸ“„ Generating PDF for all scene cards...");
+    
+    // 1. Check for necessary libraries
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+        alert('âŒ PDF generation library is not loaded. Cannot create PDF.');
+        return;
+    }
+
+    const cards = document.querySelectorAll('.card-for-export');
+    if (cards.length === 0) {
+        alert('No cards to save.');
+        return;
+    }
+
+    alert(`Preparing to generate a PDF with ${cards.length} cards. This may take a moment...`);
+
+    // 2. Initialize the PDF document (A4 size, units in millimeters)
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // 3. Define the layout for the cards on the page
+    const cardWidthMM = 127;  // 5 inches
+    const cardHeightMM = 76;   // 3 inches
+    const pageHeightMM = 297;  // A4 page height
+    const pageWidthMM = 210;   // A4 page width
+    const topMarginMM = 15;
+    const leftMarginMM = (pageWidthMM - (cardWidthMM * 1)) / 2; // Centering one card per row
+    const gapMM = 15;          // Space between cards vertically for cutting
+
+    let x = leftMarginMM;
+    let y = topMarginMM;
+
+    try {
+        for (let i = 0; i < cards.length; i++) {
+            // 4. Generate the image data for each card using our existing helper function
+            const blob = await generateCardImageBlob(cards[i]);
+            if (!blob) continue; // Skip if a card fails to generate
+
+            const dataUrl = URL.createObjectURL(blob);
+
+            // 5. Check if the card will fit on the current page. If not, add a new page.
+            if (y + cardHeightMM > pageHeightMM - topMarginMM) {
+                doc.addPage();
+                y = topMarginMM; // Reset Y position to the top margin
             }
 
-            // 8. Save the completed PDF file
-            doc.save('ToscripT_All_Cards.pdf');
-            alert(`🎉 PDF created successfully with ${cards.length} cards!`);
+            // 6. Add the card image to the PDF at the calculated position
+            doc.addImage(dataUrl, 'PNG', x, y, cardWidthMM, cardHeightMM);
+            URL.revokeObjectURL(dataUrl); // Clean up memory
 
-        } catch (error) {
-            console.error("Failed to generate PDF:", error);
-            alert("An error occurred while creating the PDF. Please check the console for details.");
+            // 7. Update the Y position for the next card to be placed below the current one
+            y += cardHeightMM + gapMM;
         }
+
+        // 8. Save the completed PDF file
+        doc.save('ToscripT_All_Cards.pdf');
+        alert(`ðŸŽ‰ PDF created successfully with ${cards.length} cards!`);
+
+    } catch (error) {
+        console.error("Failed to generate PDF:", error);
+        alert("An error occurred while creating the PDF. Please check the console for details.");
     }
+}
 
     // Action buttons handling
     function handleActionBtn(e) {
@@ -1038,263 +1034,140 @@ FADE OUT.`;
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-    // FIXED: Complete FilmProj export with all data
     function saveAsFilmProj() {
-        console.log('🎬 Saving complete FilmProj file...');
-        
-        try {
-            // Update project data before saving
-            if (fountainInput) {
-                projectData.projectInfo.scriptContent = fountainInput.value;
-                projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-            }
-
-            // Create comprehensive FilmProj structure
-            const filmProj = {
-                fileVersion: '1.2',
-                application: 'ToscripT Professional',
-                created: new Date().toISOString(),
-                lastModified: new Date().toISOString(),
-                projectInfo: {
-                    projectName: projectData.projectInfo.projectName || 'Untitled',
-                    prodName: projectData.projectInfo.prodName || 'Author',
-                    scriptContent: projectData.projectInfo.scriptContent || '',
-                    scenes: projectData.projectInfo.scenes || [],
-                    settings: {
-                        fontSize: fontSize,
-                        showSceneNumbers: showSceneNumbers,
-                        autoSave: !!autoSaveInterval
-                    }
-                },
-                // Include card data for complete restoration
-                cardData: [],
-                // Include history for undo/redo
-                history: {
-                    stack: history.stack.slice(),
-                    currentIndex: history.currentIndex
-                },
-                // Export metadata
-                exportInfo: {
-                    exportedBy: 'ToscripT Professional',
-                    exportDate: new Date().toISOString(),
-                    version: '1.2'
-                }
-            };
-
-            // Capture card data if in card view
-            const cardContainer = document.getElementById('card-container');
-            if (cardContainer) {
-                const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
-                filmProj.cardData = cards.map(card => {
-                    const titleElement = card.querySelector('.card-scene-title');
-                    const descriptionElement = card.querySelector('.card-description');
-                    const numberElement = card.querySelector('.card-scene-number');
-                    
-                    return {
-                        sceneId: card.dataset.sceneId,
-                        sceneNumber: numberElement?.value || '',
-                        title: titleElement?.textContent?.trim() || '',
-                        description: descriptionElement?.value || ''
-                    };
-                });
-            }
-
-            // Create and download the file
-            const blob = new Blob([JSON.stringify(filmProj, null, 2)], { 
-                type: 'application/json' 
-            });
-            
-            const filename = `${projectData.projectInfo.projectName}.filmproj`;
-            downloadBlob(blob, filename);
-            
-            alert('✅ Complete .filmproj file saved with all data!');
-            console.log('✅ Complete FilmProj exported');
-
-        } catch (error) {
-            console.error('FilmProj Export Error:', error);
-            alert('❌ Failed to save .filmproj file. Check console for details.');
-        }
+        projectData.projectInfo.scriptContent = fountainInput.value;
+        const filmproj = {
+            fileVersion: '1.0',
+            projectInfo: projectData.projectInfo,
+            scenes: projectData.projectInfo.scenes,
+            created: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(filmproj, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-    // FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
-    function saveAsPdfEnglish() {
-        console.log('📄 Generating selectable PDF...');
-        
-        if (typeof window.jspdf === 'undefined') {
-            alert('PDF library (jsPDF) not loaded. Please check your internet connection and script tags.');
-            console.error('jsPDF library not found');
+// FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
+function saveAsPdfEnglish() {
+    if (typeof window.jspdf === 'undefined') {
+        alert('PDF library (jsPDF) not loaded. Check console and script tags.');
+        return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+
+    // Standard Screenplay Layout Constants (in inches)
+    const leftMargin = 1.5;
+    const rightMargin = 1.0;
+    const topMargin = 1.0;
+    const bottomMargin = 1.0;
+    const pageHeight = 11.0;
+    const pageWidth = 8.5;
+    const lineHeight = 1 / 6;
+    const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0, transition: 0 };
+    const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5, transition: 6.0 };
+
+    const tokens = parseFountain(fountainInput.value || '');
+    if (tokens.length === 0) {
+        alert('No content to export.');
+        return;
+    }
+
+    let y = topMargin;
+    const checkPageBreak = (linesCount = 1) => {
+        if (y + linesCount * lineHeight > pageHeight - bottomMargin) {
+            doc.addPage();
+            y = topMargin;
+        }
+    };
+
+    doc.setFont('Courier', 'normal');
+    doc.setFontSize(12);
+
+    tokens.forEach(token => {
+        if (!token.type || !token.text) {
+            if (token.type === 'empty') y += lineHeight;
             return;
         }
+        const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+        if (['scene_heading', 'character', 'transition'].includes(token.type)) checkPageBreak(1);
+        checkPageBreak(textLines.length);
 
-        const { jsPDF } = window.jspdf;
-        
-        try {
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'in',
-                format: 'letter'
-            });
+        doc.setFont('Courier', (token.type === 'scene_heading' || token.type === 'transition') ? 'bold' : 'normal');
 
-            // Standard screenplay formatting
-            const leftMargin = 1.5;
-            const rightMargin = 1.0;
-            const topMargin = 1.0;
-            const bottomMargin = 1.0;
-            const pageHeight = 11.0;
-            const lineHeight = 1/6;
-
-            const indents = {
-                'sceneheading': 0,
-                'action': 0,
-                'character': 2.2,
-                'parenthetical': 1.6,
-                'dialogue': 1.0,
-                'transition': 0
-            };
-
-            const widths = {
-                'sceneheading': 6.0,
-                'action': 6.0,
-                'character': 2.8,
-                'parenthetical': 2.0,
-                'dialogue': 3.5,
-                'transition': 6.0
-            };
-
-            const tokens = parseFountain(fountainInput.value);
-            
-            if (tokens.length === 0) {
-                alert('No content to export.');
-                return;
-            }
-
-            let y = topMargin;
-
-            const checkPageBreak = (linesCount = 1) => {
-                if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
-                    doc.addPage();
-                    y = topMargin;
-                }
-            };
-
-            doc.setFont('Courier', 'normal');
-            doc.setFontSize(12);
-
-            tokens.forEach(token => {
-                if (!token.type || !token.text || token.type === 'empty') {
-                    if (token.type === 'empty') y += lineHeight;
-                    return;
-                }
-
-                const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
-                
-                if (['sceneheading', 'character', 'transition'].includes(token.type)) {
-                    checkPageBreak(1);
-                }
-                checkPageBreak(textLines.length);
-
-                doc.setFont('Courier', 
-                    (token.type === 'sceneheading' || token.type === 'transition') ? 'bold' : 'normal'
-                );
-
-                if (token.type === 'transition') {
-                    doc.text(token.text, 8.5 - rightMargin, y, { align: 'right' });
-                } else {
-                    const x = leftMargin + (indents[token.type] || 0);
-                    doc.text(textLines, x, y);
-                }
-
-                y += textLines.length * lineHeight;
-            });
-
-            const filename = `${projectData.projectInfo.projectName}_screenplay.pdf`;
-            doc.save(filename);
-            
-            alert('✅ PDF exported successfully!');
-            console.log('✅ Selectable Text PDF exported');
-
-        } catch (error) {
-            console.error('PDF Export Error:', error);
-            alert('❌ Failed to generate PDF. Check console for details.');
+        if (token.type === 'transition') {
+            doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
+        } else {
+            const x = leftMargin + (indents[token.type] || 0);
+            doc.text(textLines, x, y);
         }
-    }
+        y += textLines.length * lineHeight;
+    });
+
+    doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
+    console.log('Selectable Text PDF exported.');
+}
 
     // FIXED: .pdf (Unicode Image) - With font preloading and multi-page fix
-    async function preloadResourcesForCanvas() {
-        try {
-            console.log("Preloading fonts for PDF generation...");
-            await document.fonts.ready;
-            console.log("Fonts preloaded successfully.");
-        } catch (error) {
-            console.error("Error preloading fonts:", error);
-            alert("Could not preload fonts, PDF export may have issues.");
-        }
+async function preloadResourcesForCanvas() {
+    try {
+        console.log("Preloading fonts for PDF generation...");
+        await document.fonts.ready;
+        console.log("Fonts preloaded successfully.");
+    } catch (error) {
+        console.error("Error preloading fonts:", error);
+        alert("Could not preload fonts, PDF export may have issues.");
     }
+}
 
-    async function saveAsPdfUnicode() {
-        console.log('🖼️ Generating Unicode PDF...');
-        
-        if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-            alert('Required libraries (jsPDF or html2canvas) not loaded. Please check your internet connection and script tags.');
-            console.error('Required PDF libraries not found');
-            return;
-        }
+async function saveAsPdfUnicode() {
+    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+        alert('Required libraries (jsPDF or html2canvas) not loaded. Check console and script tags.');
+        return;
+    }
+    const sourceElement = document.getElementById('screenplay-output');
+    if (!sourceElement || sourceElement.innerText.trim() === '') {
+        alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
+        return;
+    }
+    alert('Generating high-quality Unicode PDF, this may take a moment...');
 
-        const sourceElement = document.getElementById('screenplay-output');
-        if (!sourceElement || !sourceElement.innerText.trim()) {
-            alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
-            return;
-        }
+    await preloadResourcesForCanvas();
 
-        alert('📸 Generating high-quality Unicode PDF, this may take a moment...');
+    try {
+        const canvas = await html2canvas(sourceElement, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false // Suppress console logs from the library
+        });
+        const imgData = canvas.toDataURL('image/png', 0.97);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
 
-        await preloadResourcesForCanvas();
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
 
-        try {
-            const canvas = await html2canvas(sourceElement, {
-                scale: 3,
-                backgroundColor: '#ffffff',
-                useCORS: true,
-                logging: false
-            });
+        let heightLeft = imgHeightInPdf;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+        heightLeft -= pdfHeight;
 
-            const imgData = canvas.toDataURL('image/png', 0.98);
-            
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({
-                orientation: 'portrait',
-                unit: 'pt',
-                format: 'a4'
-            });
-
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgProps = pdf.getImageProperties(imgData);
-            const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
-
-            let heightLeft = imgHeightInPdf;
-            let position = 0;
+        while (heightLeft > 0) {
+            position -= pdfHeight; // Corrected positioning for multi-page
+            pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
             heightLeft -= pdfHeight;
-
-            while (heightLeft > 0) {
-                position = heightLeft - imgHeightInPdf;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
-                heightLeft -= pdfHeight;
-            }
-
-            const filename = `${projectData.projectInfo.projectName}_unicode.pdf`;
-            pdf.save(filename);
-            
-            alert('✅ Unicode PDF exported successfully!');
-            console.log('✅ Unicode Image PDF exported');
-
-        } catch (error) {
-            console.error('Unicode PDF Export Error:', error);
-            alert('❌ Failed to generate Unicode PDF. Check console for details.');
         }
+
+        pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
+        console.log('Unicode Image PDF exported.');
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        alert("An error occurred while creating the Unicode PDF. Check console for details.");
     }
+}
 
     function openFountainFile(e) {
         const file = e.target.files[0];
@@ -1322,7 +1195,6 @@ FADE OUT.`;
 
                         if (fountainInput) fountainInput.value = fountainText.trim();
                         clearPlaceholder();
-                        alert('✅ .filmproj loaded successfully!');
                     }
                 } catch (err) {
                     alert('Invalid .filmproj file format');
@@ -1330,7 +1202,6 @@ FADE OUT.`;
             } else {
                 if (fountainInput) fountainInput.value = content;
                 clearPlaceholder();
-                alert('✅ File loaded!');
             }
 
             history.add(fountainInput.value);
@@ -1417,24 +1288,24 @@ FADE OUT.`;
         // Make jumpToScene globally available
         window.jumpToScene = jumpToScene;
 
-        if (fountainInput) {
-            fountainInput.addEventListener('input', () => {
-                clearPlaceholder(); // Ensure placeholder doesn't interfere
-                history.add(fountainInput.value);
-                saveProjectData();
+       if (fountainInput) {
+    fountainInput.addEventListener('input', () => {
+        clearPlaceholder(); // Ensure placeholder doesn't interfere
+        history.add(fountainInput.value);
+        saveProjectData();
 
-                clearTimeout(debounceTimeout);
-                debounceTimeout = setTimeout(() => {
-                    // Only update scenes array without overwriting input
-                    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-                    // If in card view, re-render cards but DON'T call syncCardsToEditor() here
-                    if (currentView === 'card') {
-                        renderEnhancedCardView();
-                    }
-                    console.log('Updated scenes from text input - no overwrite');
-                }, 500);
-            });
-        }
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            // Only update scenes array without overwriting input
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+            // If in card view, re-render cards but DON'T call syncCardsToEditor() here
+            if (currentView === 'card') {
+                renderEnhancedCardView();
+            }
+            console.log('Updated scenes from text input - no overwrite');
+        }, 500);
+    });
+}
 
         // File input
         if (fileInput) fileInput.addEventListener('change', openFountainFile);
@@ -1727,7 +1598,7 @@ FADE OUT.`;
 
         createModal('about-modal', 'About ToscripT', `
             <div style="text-align: center; margin: 2rem 0;">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🎬</div>
+                <div style="font-size: 3rem; margin-bottom: 1rem;">ðŸŽ¬</div>
                 <h3 style="color: var(--primary-color); margin: 0;">ToscripT Professional</h3>
                 <p style="color: var(--muted-text-color); margin: 0.5rem 0;">Professional Screenwriting Tool</p>
                 <hr style="border-color: var(--border-color); margin: 2rem 0;">
