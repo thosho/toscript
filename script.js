@@ -280,6 +280,77 @@ FADE OUT.`;
         return tokens;
     }
 
+
+// MISSING FUNCTION - Add this to fix Card View
+function extractScenesFromText(text) {
+    if (!text || text.trim() === '') return [];
+    
+    const tokens = parseFountain(text);
+    const scenes = [];
+    let currentScene = null;
+    let sceneNumber = 0;
+    
+    tokens.forEach(token => {
+        if (token.type === 'sceneheading') {
+            // Save previous scene if it exists
+            if (currentScene) {
+                scenes.push(currentScene);
+            }
+            
+            // Start new scene
+            sceneNumber++;
+            const heading = token.text.toUpperCase();
+            
+            // Extract scene type (INT./EXT.)
+            const sceneTypeMatch = heading.match(/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/);
+            const sceneType = sceneTypeMatch ? sceneTypeMatch[1] : 'INT.';
+            
+            // Extract time of day
+            const timeMatch = heading.match(/(DAY|NIGHT|MORNING|EVENING|DAWN|DUSK|CONTINUOUS|LATER|MOMENTS LATER)$/);
+            const timeOfDay = timeMatch ? timeMatch[1] : 'DAY';
+            
+            // Extract location (everything between scene type and time)
+            let location = heading
+                .replace(/^(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)\s*/, '')
+                .replace(/\s*-\s*(DAY|NIGHT|MORNING|EVENING|DAWN|DUSK|CONTINUOUS|LATER|MOMENTS LATER)$/, '')
+                .trim();
+            
+            if (!location) location = 'LOCATION';
+            
+            currentScene = {
+                number: sceneNumber,
+                heading: heading,
+                sceneType: sceneType,
+                location: location,
+                timeOfDay: timeOfDay,
+                description: [],
+                characters: []
+            };
+        } else if (currentScene && token.type === 'action') {
+            currentScene.description.push(token.text);
+        } else if (currentScene && token.type === 'dialogue') {
+            currentScene.description.push(token.text);
+        } else if (currentScene && token.type === 'character') {
+            // Extract character names for filtering
+            const charName = token.text.trim().toUpperCase();
+            if (!currentScene.characters.includes(charName)) {
+                currentScene.characters.push(charName);
+            }
+            currentScene.description.push(token.text);
+        } else if (currentScene && (token.type === 'parenthetical' || token.type === 'transition')) {
+            currentScene.description.push(token.text);
+        }
+    });
+    
+    // Don't forget the last scene
+    if (currentScene) {
+        scenes.push(currentScene);
+    }
+    
+    console.log(`Extracted ${scenes.length} scenes from text`);
+    return scenes;
+}
+
     // View Switching
     function switchView(view) {
         console.log(`🔄 Switching to view: ${view}`);
