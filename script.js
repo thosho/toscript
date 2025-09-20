@@ -876,64 +876,127 @@ async function saveAllCardsAsImages() {
         }
     }
 
-    // FIXED: Enhanced Scene Navigator with Scene Numbers and DAY/NIGHT
-    function updateSceneNavigator() {
-        if (!sceneList) return;
+// --- COMPLETE SCENE NAVIGATOR & REORDERING ENGINE ---
 
-        const scenes = projectData.projectInfo.scenes || [];
-        
-        sceneList.innerHTML = scenes.map(scene => `
-            <li data-scene-number="${scene.number}" onclick="jumpToScene(${scene.number})">
-                <div class="scene-item-header">
-                    <span class="scene-number">#${scene.number}</span>
-                    <span class="scene-time">${scene.timeOfDay}</span>
-                </div>
-                <div class="scene-heading">${scene.heading}</div>
-            </li>
-        `).join('');
+function updateSceneNavigator() {
+    if (!sceneList) return;
+    sceneList.innerHTML = '';
+    const lines = fountainInput.value.split('\n');
+    let sceneIndex = 0; // This will track the original index of the scene block
 
-        // Setup drag and drop
-        if (typeof Sortable !== 'undefined') {
-            new Sortable(sceneList, {
-                animation: 200,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'dragging',
-                onEnd: (evt) => {
-                    console.log('🔄 Scene reordered');
-                    // Here you could implement scene reordering logic
-                }
-            });
+    // This logic finds all scenes and adds them to the list
+    lines.forEach((line) => {
+        const trimmedLine = line.trim().toUpperCase();
+        if (trimmedLine.startsWith('INT.') || trimmedLine.startsWith('EXT.') || trimmedLine.startsWith('.')) {
+            const li = document.createElement('li');
+            li.textContent = line.trim().replace(/^\./, '');
+            li.draggable = true;
+            li.dataset.sceneIndex = sceneIndex++; // Assign original index
+            li.addEventListener('click', () => jumpToScene(line.trim())); // Add jump-to-scene functionality
+            sceneList.appendChild(li);
         }
+    });
 
-        console.log(`🎭 Scene navigator updated with ${scenes.length} scenes`);
-    }
+    // Setup Drag and Drop listeners
+    let draggedItem = null;
+    sceneList.addEventListener('dragstart', e => {
+        draggedItem = e.target;
+        setTimeout(() => e.target.classList.add('dragging'), 0);
+    });
+    sceneList.addEventListener('dragend', e => {
+        e.target.classList.remove('dragging');
+    });
+    sceneList.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(sceneList, e.clientY);
+        if (afterElement == null) {
+            sceneList.appendChild(draggedItem);
+        } else {
+            sceneList.insertBefore(draggedItem, afterElement);
+        }
+    });
+    sceneList.addEventListener('drop', () => {
+        reorderScript(); // This is the crucial function that rewrites the text
+    });
+}
 
-    // Jump to scene in editor
-    function jumpToScene(sceneNumber) {
-        if (!fountainInput) return;
-        
-        const scenes = projectData.projectInfo.scenes || [];
-        const targetScene = scenes.find(s => s.number === sceneNumber);
-        
-        if (targetScene) {
-            const sceneText = targetScene.heading;
-            const index = fountainInput.value.indexOf(sceneText);
-            
-            if (index > -1) {
-                switchView('write');
-                setTimeout(() => {
-                    fountainInput.focus();
-                    fountainInput.setSelectionRange(index, index + sceneText.length);
-                    fountainInput.scrollTop = fountainInput.scrollHeight * (index / fountainInput.value.length);
-                }, 200);
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function reorderScript() {
+    const fullText = fountainInput.value;
+    const lines = fullText.split('\n');
+    const sceneBlocks = [];
+    let nonSceneHeader = [];
+    let currentSceneBlock = [];
+    let isFirstSceneFound = false;
+
+    // This complex logic correctly splits your script into blocks
+    lines.forEach(line => {
+        const isSceneHeading = line.trim().toUpperCase().startsWith('INT.') || line.trim().toUpperCase().startsWith('EXT.') || line.trim().startsWith('.');
+        if (isSceneHeading) {
+            if (!isFirstSceneFound) isFirstSceneFound = true;
+            if (currentSceneBlock.length > 0) {
+                sceneBlocks.push(currentSceneBlock.join('\n'));
+            }
+            currentSceneBlock = [line];
+        } else {
+            if (isFirstSceneFound) {
+                currentSceneBlock.push(line);
+            } else {
+                nonSceneHeader.push(line);
             }
         }
-        
-        // Close navigator
-        if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open');
+    });
+    if (currentSceneBlock.length > 0) {
+        sceneBlocks.push(currentSceneBlock.join('\n'));
     }
 
+    const newOrderIndices = [...sceneList.querySelectorAll('li')].map(li => parseInt(li.dataset.sceneIndex));
+    const reorderedSceneBlocks = newOrderIndices.map(index => sceneBlocks[index]);
+
+    const headerText = nonSceneHeader.join('\n');
+    const newScriptArray = [];
+    if (headerText.trim() !== '') {
+        newScriptArray.push(headerText);
+    }
+    newScriptArray.push(...reorderedSceneBlocks);
+
+    // Update the main textarea with the newly ordered script
+    fountainInput.value = newScriptArray.join('\n\n');
+    history.add(fountainInput.value);
+    saveProjectData();
+    updateSceneNavigator(); // Refresh navigator to update indices
+}
+
+function jumpToScene(sceneHeadingText) {
+    if (!fountainInput) return;
+    const index = fountainInput.value.indexOf(sceneHeadingText);
+    if (index > -1) {
+        switchView('write');
+        setTimeout(() => {
+            fountainInput.focus();
+            fountainInput.setSelectionRange(index, index + sceneHeadingText.length);
+            // Scroll the textarea to the position of the scene
+            const textLines = fountainInput.value.substring(0, index).split('\n').length;
+            const avgLineHeight = fountainInput.scrollHeight / fountainInput.value.split('\n').length;
+            fountainInput.scrollTop = (textLines - 5) * avgLineHeight; // scroll with some context
+        }, 100);
+    }
+    if (sceneNavigatorPanel) sceneNavigatorPanel.classList.remove('open');
+}
+
+    
     // Export scene order as text
     function exportSceneOrderAsText() {
         if (!sceneList) return;
