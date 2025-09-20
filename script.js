@@ -702,59 +702,64 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-    // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
-    async function generateCardImageBlob(cardElement) {
-        // Extract data from the on-screen card
-        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
-        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
-        const description = cardElement.querySelector('.card-description')?.value || '';
+   // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
+// This matches your original printing style as shown in the screenshot (bold heading, scene number, monospaced text, watermark).
 
-        // Create a temporary, hidden element styled exactly like a 3x5 index card
-        const printableCard = document.createElement('div');
-        printableCard.style.cssText = `
-            position: absolute;
-            left: -9999px;  // Position it off-screen
-            width: 480px;    // 5 inches at 96dpi
-            height: 288px;   // 3 inches at 96dpi
-            background-color: #ffffff;
-            border: 1.5px solid #000000;
-            font-family: 'Courier Prime', 'Courier New', monospace;
-            color: #000000;  // Pure black text
-            font-weight: 500; // Make all text slightly bolder
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
-        `;
+async function generateCardImageBlob(cardElement) {
+    // Extract data from the on-screen card
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
+    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
+    const description = cardElement.querySelector('.card-description')?.value || '';
 
-        // Create a concise summary from the full description
-        const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
+    // Create a temporary, hidden element styled exactly like a 3x5 index card
+    const printableCard = document.createElement('div');
+    printableCard.style.cssText = `
+        position: absolute;
+        left: -9999px;  // Position it off-screen
+        width: 480px;    // 5 inches at 96dpi
+        height: 288px;   // 3 inches at 96dpi
+        background-color: #ffffff;
+        border: 1.5px solid #000000;
+        --- CHANGED: Set font and make it bolder ---
+        font-family: 'Courier Prime', 'Courier New', monospace;
+        color: #000000;  // Pure black text
+        font-weight: 500; // Make all text slightly bolder to combat rendering lightness
+        ------------------------------------------- 
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+    `;
 
-        // Populate the printable card with the correctly formatted HTML
-        printableCard.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
-                <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
-                <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
-            </div>
-            <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">${descriptionSummary}</div>
-            <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">ToscripT</div>
-        `;
+    // Create a concise summary from the full description
+    const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
 
-        document.body.appendChild(printableCard);
+    // Populate the printable card with the correctly formatted HTML
+    printableCard.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
+            <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
+        </div>
+        <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">${descriptionSummary}</div>
+        <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">ToscripT</div>
+    `;
 
-        return new Promise(async resolve => {
-            try {
-                const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
-                canvas.toBlob(blob => resolve(blob), 'image/png', 0.95);
-            } catch (error) {
-                console.error('Card image generation failed', error);
-                resolve(null);
-            } finally {
-                // IMPORTANT: Always remove the temporary element
-                document.body.removeChild(printableCard);
-            }
-        });
-    }
+    document.body.appendChild(printableCard);
+
+    return new Promise(async resolve => {
+        try {
+            const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
+            canvas.toBlob(blob => resolve(blob), 'image/png', 0.95);
+        } catch (error) {
+            console.error('Card image generation failed', error);
+            resolve(null);
+        } finally {
+            // IMPORTANT: Always remove the temporary element
+            document.body.removeChild(printableCard);
+        }
+    });
+}
+
 
     // REPLACEMENT FUNCTION: for sharing a single card
     async function shareSceneCard(sceneId) {
