@@ -702,28 +702,30 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-   // ORIGINAL: generateCardImageBlob - Matches your screenshot's print style (bold heading left, number right, divider, full text block, watermark)
+  // ORIGINAL: generateCardImageBlob - Matches your screenshot's print style (bold heading left, number right, divider, full text block, watermark)
 async function generateCardImageBlob(cardElement) {
     // Extract data from the on-screen card
-    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '1';
-    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'INT. DETECTIVE\'S OFFICE - NIGHT';
-    const description = cardElement.querySelector('.card-description')?.value || 'The office is dimly lit with case files scattered everywhere.\n\nDETECTIVE VIKRAM (40s, weary) sits behind a cluttered desk, staring at cold coffee.\n\nThe door creaks open. MAYA (30s, mysterious) steps out of the shadows.';
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
+    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
+    const description = cardElement.querySelector('.card-description')?.value || '';
 
-    // Create temporary printable card with original styling
+    // Create a temporary, hidden element styled exactly like a 3x5 index card
     const printableCard = document.createElement('div');
-    printableCard.className = 'scene-card card-for-export';  // Use your exact CSS class for styling
-    printableCard.style.width = '3in';  // Original print size
-    printableCard.style.height = '5in';
-    printableCard.style.backgroundColor = 'white';
-    printableCard.style.color = 'black';
-    printableCard.style.border = '1px solid black';
-    printableCard.style.padding = '0.5in';
-    printableCard.style.fontFamily = "'Courier Prime', monospace";
-    printableCard.style.fontSize = '12pt';
-    printableCard.style.lineHeight = '1';
-    printableCard.style.position = 'absolute';
-    printableCard.style.left = '-9999px';
+    printableCard.style.cssText = `
+        position: absolute;
+        left: -9999px;
+        width: 3in;
+        height: 5in;
+        background-color: white;
+        color: black;
+        border: 1px solid black;
+        padding: 0.5in;
+        font-family: 'Courier Prime', monospace;
+        font-size: 12pt;
+        line-height: 1;
+    `;
 
+    // Populate with formatted HTML matching your original layout
     printableCard.innerHTML = `
         <div class="card-header" style="display: flex; justify-content: space-between; margin-bottom: 0.5in; border-bottom: 1px solid black;">
             <span style="font-weight: bold; text-transform: uppercase;">${sceneHeading}</span>
@@ -746,7 +748,7 @@ async function generateCardImageBlob(cardElement) {
     document.body.removeChild(printableCard);
     return blob;
 }
-
+ 
 
 
     // REPLACEMENT FUNCTION: for sharing a single card
