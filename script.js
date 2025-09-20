@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let showSceneNumbers = true;
     let currentView = 'write';
     let debounceTimeout = null;
+    let isUpdatingFromSync = false;  // ADD THIS LINE
 
     // DOM elements
     const fountainInput = document.getElementById('fountain-input');
