@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("🎬 ToscripT Professional - Restored & Fully Functional");
+    console.log("🎬 ToscripT Professional - Fully Restored & Functional");
 
     // --- GLOBAL STATE ---
     let projectData = {
@@ -74,7 +74,6 @@ FADE OUT.`;
     };
 
     // --- CORE APP & VIEW LOGIC ---
-
     function setPlaceholder() {
         if (fountainInput && fountainInput.value.trim() === '') {
             fountainInput.value = placeholderText;
@@ -95,13 +94,13 @@ FADE OUT.`;
         currentView = view;
         [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
         [mainHeader, scriptHeader, cardHeader].forEach(h => h.style.display = 'none');
+        hideMobileToolbar();
 
         if (view === 'script') {
             scriptView?.classList.add('active');
             scriptHeader.style.display = 'flex';
             renderEnhancedScript();
         } else if (view === 'card') {
-            // This is the critical fix for card view. Always parse fresh data before rendering.
             projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
             cardView?.classList.add('active');
             cardHeader.style.display = 'flex';
@@ -113,7 +112,6 @@ FADE OUT.`;
     }
 
     // --- PARSING & RENDERING (Using Fountain.js library) ---
-
     function renderEnhancedScript() {
         if (!screenplayOutput || !fountainInput) return;
         if (typeof fountain === 'undefined') {
@@ -167,7 +165,6 @@ FADE OUT.`;
     }
     
     // --- PDF & IMAGE EXPORT ---
-
     async function preloadResourcesForCanvas() {
         try {
             await document.fonts.ready;
@@ -281,7 +278,7 @@ FADE OUT.`;
         if (fountainInput && projectData.projectInfo.scriptContent) {
             fountainInput.value = projectData.projectInfo.scriptContent;
         }
-        // These functions were missing from your file, so they are commented out to prevent crashes
+        // **FIXED**: Removed calls to undefined functions that were crashing the script
         // updateSceneNoIndicator();
         // updateAutoSaveIndicator();
     }
@@ -469,10 +466,10 @@ FADE OUT.`;
             const target = e.target.closest('button[id], a[id]');
             if (!target) return;
 
-            if (target.closest('.dropdown-content, .side-menu nav > a')) {
-                 const dropdown = document.querySelector('.dropdown-container.open');
-                 if(dropdown) dropdown.classList.remove('open');
+            const dropdownContainer = target.closest('.dropdown-container');
+            if (target.closest('.dropdown-content') || (target.closest('.side-menu nav > a') && !dropdownContainer)) {
                  menuPanel.classList.remove('open');
+                 document.querySelectorAll('.dropdown-container.open').forEach(d => d.classList.remove('open'));
             }
 
             const id = target.id;
@@ -522,7 +519,6 @@ FADE OUT.`;
             saveProjectData();
             clearTimeout(debounceTimeout);
             debounceTimeout = setTimeout(() => {
-                // When typing in the editor, if we are in card view, update it
                 if (currentView === 'card') {
                     projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
                     renderEnhancedCardView();
