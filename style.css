@@ -114,14 +114,21 @@ body.fullscreen-active #desktop-side-toolbar {
     padding: 0;
     white-space: pre-wrap; /* Respects line breaks within the element */
 }
-
 .scene-heading {
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     font-weight: bold !important; 
     text-transform: uppercase !important; 
     color: #000000 !important;
     margin: 24px 0 12px 0;
+    width: 100%;
+}
+
+.scene-number {
+    font-weight: bold;
+    color: #000000;
+    margin-left: auto;
 }
 .character { 
     text-transform: uppercase !important; 
