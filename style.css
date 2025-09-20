@@ -115,67 +115,41 @@ body.fullscreen-active #desktop-side-toolbar {
     white-space: pre-wrap; /* Respects line breaks within the element */
 }
 
-/* Industry Standard Screenplay Formatting */
-.scene-heading {
+/* CODE ONE WORKING FORMATTING */
+.scene-heading { 
+    font-weight: bold !important; 
+    text-transform: uppercase !important; 
     color: #000000 !important;
-    font-weight: bold !important;
-    text-align: left;
     margin: 24px 0 12px 0;
-    text-transform: uppercase;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
 }
-
-.character {
+.character { 
+    text-transform: uppercase !important; 
+    margin-left: 37% !important; 
     color: #000000 !important;
-    font-weight: normal;
-    text-align: center;
-    margin: 12px 0 6px 0;
-    text-transform: uppercase;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
+    margin-top: 12px;
+    margin-bottom: 6px;
 }
-
-.dialogue {
+.dialogue { 
+    margin-left: 25% !important; 
+    margin-right: 15% !important; 
     color: #000000 !important;
-    font-weight: normal;
-    text-align: left;
-    margin: 0 0 6px 0;
-    margin-left: 96px;
-    margin-right: 144px;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
     line-height: 1.2;
 }
-
-.parenthetical {
+.parenthetical { 
+    margin-left: 30% !important; 
     color: #000000 !important;
-    font-weight: normal;
-    text-align: center;
-    margin: 0 0 6px 0;
     font-style: normal;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
 }
-
-.action {
+.action { 
     color: #000000 !important;
-    font-weight: normal;
-    text-align: left;
     margin: 12px 0;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
-    line-height: 1.2;
 }
-
-.transition {
+.transition { 
+    text-align: right !important; 
+    text-transform: uppercase !important; 
+    font-weight: bold !important; 
     color: #000000 !important;
-    font-weight: normal;
-    text-align: right;
     margin: 12px 0;
-    text-transform: uppercase;
-    font-family: 'Courier New', monospace;
-    font-size: 12pt;
 }
 
 .title-page-element {
