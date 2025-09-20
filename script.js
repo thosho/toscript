@@ -1046,130 +1046,127 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
-  function saveAsPdfEnglish() {
-  if (typeof window.jspdf === 'undefined') {
-    console.error('jsPDF not loaded - check script tag.');
-    alert('PDF library not loaded. Ensure jspdf.umd.min.js is included and loaded.');
-    return;
-  }
-  const jsPDF = window.jspdf;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
-
-  const leftMargin = 1.5;
-  const rightMargin = 1.0;
-  const topMargin = 1.0;
-  const bottomMargin = 1.0;
-  const pageHeight = 11 - bottomMargin;
-  const lineHeight = 0.1667; // 1/6 inch for 12pt
-  const indents = { sceneheading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0, transition: 0 };
-  const widths = { sceneheading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5, transition: 6.0 };
-
-  const tokens = parseFountain(fountainInput.value) || [];
-  let y = topMargin;
-
-  if (tokens.length === 0) {
-    alert('No content to export.');
-    return;
-  }
-
-  doc.setFont('Courier', 'normal');
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-
-  tokens.forEach(token => {
-    if (token.type === 'empty') {
-      y += lineHeight;
-      return;
+// FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
+function saveAsPdfEnglish() {
+    if (typeof window.jspdf === 'undefined') {
+        alert('PDF library (jsPDF) not loaded. Check console and script tags.');
+        return;
     }
-    if (!token.text) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
 
-    const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+    // Standard Screenplay Layout Constants (in inches)
+    const leftMargin = 1.5;
+    const rightMargin = 1.0;
+    const topMargin = 1.0;
+    const bottomMargin = 1.0;
+    const pageHeight = 11.0;
+    const pageWidth = 8.5;
+    const lineHeight = 1 / 6;
+    const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0, transition: 0 };
+    const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5, transition: 6.0 };
 
-    if (['sceneheading', 'character', 'transition'].includes(token.type)) {
-      if (y + lineHeight > pageHeight) {
-        doc.addPage();
-        y = topMargin;
-      }
-    } else if (y + lineHeight * textLines.length > pageHeight) {
-      doc.addPage();
-      y = topMargin;
+    const tokens = parseFountain(fountainInput.value || '');
+    if (tokens.length === 0) {
+        alert('No content to export.');
+        return;
     }
 
-    doc.setFont('Courier', (token.type === 'sceneheading' || token.type === 'transition') ? 'bold' : 'normal');
+    let y = topMargin;
+    const checkPageBreak = (linesCount = 1) => {
+        if (y + linesCount * lineHeight > pageHeight - bottomMargin) {
+            doc.addPage();
+            y = topMargin;
+        }
+    };
 
-    const x = leftMargin + (indents[token.type] || 0);
-    const align = token.type === 'transition' ? 'right' : 'left';
-    doc.text(textLines, x, y, { align });
+    doc.setFont('Courier', 'normal');
+    doc.setFontSize(12);
 
-    y += lineHeight * textLines.length;
-  });
+    tokens.forEach(token => {
+        if (!token.type || !token.text) {
+            if (token.type === 'empty') y += lineHeight;
+            return;
+        }
+        const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+        if (['scene_heading', 'character', 'transition'].includes(token.type)) checkPageBreak(1);
+        checkPageBreak(textLines.length);
 
-  doc.save(`${projectData.projectInfo.projectName || 'Untitled'}_selectable.pdf`);
-  console.log('Selectable PDF exported successfully.');
+        doc.setFont('Courier', (token.type === 'scene_heading' || token.type === 'transition') ? 'bold' : 'normal');
+
+        if (token.type === 'transition') {
+            doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
+        } else {
+            const x = leftMargin + (indents[token.type] || 0);
+            doc.text(textLines, x, y);
+        }
+        y += textLines.length * lineHeight;
+    });
+
+    doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
+    console.log('Selectable Text PDF exported.');
 }
 
-
-   async function preloadResourcesForCanvas() {
-  try {
-    console.log('Preloading fonts...');
-    await document.fonts.ready;
-    console.log('Fonts ready for export.');
-  } catch (error) {
-    console.error('Font preload failed:', error);
-  }
+    // FIXED: .pdf (Unicode Image) - With font preloading and multi-page fix
+async function preloadResourcesForCanvas() {
+    try {
+        console.log("Preloading fonts for PDF generation...");
+        await document.fonts.ready;
+        console.log("Fonts preloaded successfully.");
+    } catch (error) {
+        console.error("Error preloading fonts:", error);
+        alert("Could not preload fonts, PDF export may have issues.");
+    }
 }
 
 async function saveAsPdfUnicode() {
-  if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-    console.error('jsPDF or html2canvas not loaded - check script tags.');
-    alert('Libraries not loaded. Ensure jspdf.umd.min.js and html2canvas.min.js are included.');
-    return;
-  }
-
-  const source = document.getElementById('screenplay-output');
-  if (!source || !source.innerText.trim()) {
-    alert('No content in preview. Switch to Script view first.');
-    return;
-  }
-
-  await preloadResourcesForCanvas();
-
-  try {
-    const canvas = await html2canvas(source, {
-      scale: 2,
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      logging: false
-    });
-
-    const imgData = canvas.toDataURL('image/png', 1.0);
-
-    const jsPDF = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
+    if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+        alert('Required libraries (jsPDF or html2canvas) not loaded. Check console and script tags.');
+        return;
     }
+    const sourceElement = document.getElementById('screenplay-output');
+    if (!sourceElement || sourceElement.innerText.trim() === '') {
+        alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
+        return;
+    }
+    alert('Generating high-quality Unicode PDF, this may take a moment...');
 
-    pdf.save(`${projectData.projectInfo.projectName || 'Untitled'}_unicode.pdf`);
-    console.log('Unicode PDF exported successfully.');
-  } catch (error) {
-    console.error('Unicode PDF error:', error);
-    alert('Error generating Unicode PDF. Check console for details and ensure libraries are loaded.');
-  }
+    await preloadResourcesForCanvas();
+
+    try {
+        const canvas = await html2canvas(sourceElement, {
+            scale: 2,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false // Suppress console logs from the library
+        });
+        const imgData = canvas.toDataURL('image/png', 0.97);
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        const imgProps = pdf.getImageProperties(imgData);
+        const imgHeightInPdf = (imgProps.height * pdfWidth) / imgProps.width;
+
+        let heightLeft = imgHeightInPdf;
+        let position = 0;
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position -= pdfHeight; // Corrected positioning for multi-page
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+            heightLeft -= pdfHeight;
+        }
+
+        pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
+        console.log('Unicode Image PDF exported.');
+    } catch (error) {
+        console.error("PDF generation failed:", error);
+        alert("An error occurred while creating the Unicode PDF. Check console for details.");
+    }
 }
 
     function openFountainFile(e) {
