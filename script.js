@@ -507,14 +507,20 @@ function renderEnhancedScript() {
             continue;
         }
 
-        // Scene headings with proper numbering
-        if (line.toUpperCase().startsWith('INT.') || line.toUpperCase().startsWith('EXT.')) {
-            sceneCount++;
-            const sceneNum = showSceneNumbers ? `${sceneCount}. ` : '';
-            scriptHtml += `<div class="scene-heading">${sceneNum}${line.toUpperCase()}</div>`;
-            inDialogue = false;
-            continue;
-        }
+        // In your renderEnhancedScript function, change the scene heading part to:
+if (line.toUpperCase().startsWith('INT.') || line.toUpperCase().startsWith('EXT.')) {
+    sceneCount++;
+    if (showSceneNumbers) {
+        scriptHtml += `<div class="scene-heading">
+            <span>${line.toUpperCase()}</span>
+            <span class="scene-number">${sceneCount}</span>
+        </div>`;
+    } else {
+        scriptHtml += `<div class="scene-heading">${line.toUpperCase()}</div>`;
+    }
+    inDialogue = false;
+    continue;
+}
 
         // Transitions
         if (line.toUpperCase().endsWith('TO:') || line.toUpperCase() === 'FADE OUT.' || line.toUpperCase() === 'FADE IN:' || line.toUpperCase() === 'FADE TO BLACK:') {
