@@ -3,6 +3,462 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- GLOBAL STATE ---
     let projectData = {
+        projectInfo: { projectName: "Untitled", prodName: "Author" }
+    };
+    let fontSize = 16;
+    let autoSaveInterval = null;
+    let showSceneNumbers = true;
+    let currentView = 'write';
+    let debounceTimeout = null;
+
+    // --- DOM ELEMENT CACHE ---
+    const fountainInput = document.getElementById('fountain-input');
+    const screenplayOutput = document.getElementById('screenplay-output');
+    const menuPanel = document.getElementById('menu-panel');
+    const sceneNavigatorPanel = document.getElementById('scene-navigator-panel');
+    const writeView = document.getElementById('write-view');
+    const scriptView = document.getElementById('script-view');
+    const cardView = document.getElementById('card-view');
+    const mainHeader = document.getElementById('main-header');
+    const scriptHeader = document.getElementById('script-header');
+    const cardHeader = document.getElementById('card-header');
+    const mobileToolbar = document.getElementById('mobile-keyboard-toolbar');
+    const fileInput = document.getElementById('file-input');
+    const sceneList = document.getElementById('scene-list');
+    const filterCategorySelect = document.getElementById('filter-category-select');
+    const filterValueInput = document.getElementById('filter-value-input');
+    const filterHelpText = document.getElementById('filter-help-text');
+
+    const placeholderText = `TITLE: THE CRIMSON DOSSIER
+AUTHOR: YOUR NAME
+
+INT. DETECTIVE'S OFFICE - NIGHT
+
+The office is dimly lit with case files scattered everywhere. DETECTIVE VIKRAM (40s, weary) sits behind a cluttered desk, staring at cold coffee.
+
+MAYA
+(whispering)
+Are you the one they call the Ghost of Bangalore?
+
+VIKRAM
+(cautious)
+That depends on who's asking.
+
+FADE OUT.`;
+
+    // --- HISTORY MANAGER ---
+    const history = {
+        stack: [""],
+        currentIndex: 0,
+        add(value) {
+            if (value !== this.stack[this.currentIndex]) {
+                this.stack = this.stack.slice(0, this.currentIndex + 1);
+                this.stack.push(value);
+                this.currentIndex++;
+                this.updateButtons();
+            }
+        },
+        undo() { if (this.currentIndex > 0) { this.currentIndex--; this.updateInput(); } },
+        redo() { if (this.currentIndex < this.stack.length - 1) { this.currentIndex++; this.updateInput(); } },
+        updateInput() {
+            if (fountainInput) {
+                fountainInput.value = this.stack[this.currentIndex] || '';
+                setPlaceholder();
+                this.updateButtons();
+            }
+        },
+        updateButtons() {
+            document.querySelectorAll('#undo-btn-top, #redo-btn-top').forEach(btn => {
+                if (btn) {
+                    if (btn.id.includes('undo')) btn.disabled = this.currentIndex <= 0;
+                    if (btn.id.includes('redo')) btn.disabled = this.currentIndex >= this.stack.length - 1;
+                }
+            });
+        }
+    };
+
+    // --- CORE APP & VIEW LOGIC ---
+    function setPlaceholder() {
+        if (fountainInput && fountainInput.value.trim() === '') {
+            fountainInput.value = placeholderText;
+            fountainInput.classList.add('placeholder');
+        } else if (fountainInput) {
+            fountainInput.classList.remove('placeholder');
+        }
+    }
+
+    function clearPlaceholder() {
+        if (fountainInput && fountainInput.classList.contains('placeholder')) {
+            fountainInput.value = '';
+            fountainInput.classList.remove('placeholder');
+        }
+    }
+
+    function switchView(view) {
+        currentView = view;
+        [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
+        [mainHeader, scriptHeader, cardHeader].forEach(h => { if(h) h.style.display = 'none'; });
+
+        if (view === 'script') {
+            scriptView?.classList.add('active');
+            if (scriptHeader) scriptHeader.style.display = 'flex';
+            renderEnhancedScript();
+        } else if (view === 'card') {
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+            cardView?.classList.add('active');
+            if (cardHeader) cardHeader.style.display = 'flex';
+            renderEnhancedCardView();
+        } else {
+            writeView?.classList.add('active');
+            if (mainHeader) mainHeader.style.display = 'flex';
+        }
+    }
+
+    // --- PARSING & RENDERING (Using Fountain.js library) ---
+    function renderEnhancedScript() {
+        if (!screenplayOutput || !fountainInput) return;
+        if (typeof fountain === 'undefined') {
+            screenplayOutput.innerHTML = `<div class="action" style="color: red; padding: 2rem;">Error: Fountain.js formatting library did not load.</div>`;
+            return;
+        }
+        try {
+            const parsedOutput = fountain.parse(fountainInput.value);
+            screenplayOutput.innerHTML = parsedOutput.html.script;
+        } catch (e) {
+            console.error("Fountain.js parsing error:", e);
+            screenplayOutput.innerHTML = `<div class="action" style="color: red; padding: 2rem;">Error parsing script syntax.</div>`;
+        }
+    }
+    
+    function extractScenesFromText(text) {
+        if (typeof fountain === 'undefined' || !text) return [];
+        try {
+            const parsed = fountain.parse(text);
+            const scenes = [];
+            let currentScene = null;
+            let sceneNumber = 0;
+
+            parsed.tokens.forEach(token => {
+                if (token.type === 'scene_heading') {
+                    if (currentScene) scenes.push(currentScene);
+                    sceneNumber++;
+                    const parts = token.text.split(' - ');
+                    currentScene = {
+                        number: sceneNumber,
+                        heading: token.text,
+                        description: [],
+                        location: parts[0] || '',
+                        timeOfDay: parts[1] || 'DAY',
+                        characters: new Set()
+                    };
+                } else if (currentScene) {
+                    if (token.type === 'character') currentScene.characters.add(token.text);
+                    if (['action', 'dialogue', 'parenthetical'].includes(token.type) && token.text.trim()) {
+                        currentScene.description.push(token.text.trim());
+                    }
+                }
+            });
+            if (currentScene) scenes.push(currentScene);
+            scenes.forEach(scene => scene.characters = Array.from(scene.characters));
+            return scenes;
+        } catch (e) {
+            console.error("Error extracting scenes:", e);
+            return [];
+        }
+    }
+    
+    // --- PDF & IMAGE EXPORT ---
+    async function preloadResourcesForCanvas() {
+        try {
+            await document.fonts.ready;
+        } catch (error) {
+            console.error("Error preloading fonts:", error);
+            alert("Could not preload fonts, PDF export may have issues.");
+        }
+    }
+    
+    async function saveAsPdfUnicode() {
+        if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
+            return alert('Required libraries are still loading. Please wait a moment and try again.');
+        }
+        renderEnhancedScript(); // Make sure the preview is up-to-date
+        const sourceElement = document.getElementById('screenplay-output');
+        if (!sourceElement || sourceElement.innerText.trim() === '') {
+            return alert('Nothing to save. Please write a script first.');
+        }
+        alert('Generating high-quality Unicode PDF, this may take a moment...');
+        try {
+            await preloadResourcesForCanvas();
+            const canvas = await html2canvas(sourceElement, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false });
+            const imgData = canvas.toDataURL('image/png', 0.97);
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgProps = pdf.getImageProperties(imgData);
+            const imgHeightInPdf = imgProps.height * pdfWidth / imgProps.width;
+            let heightLeft = imgHeightInPdf, position = 0;
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+            heightLeft -= pdfHeight;
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeightInPdf;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
+                heightLeft -= pdfHeight;
+            }
+            pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
+        } catch (error) {
+            console.error("PDF generation failed:", error);
+            alert("An error occurred while creating the Unicode PDF.");
+        }
+    }
+
+    function saveAsPdfEnglish() {
+        if (typeof window.jspdf === 'undefined' || typeof window.fountain === 'undefined') {
+            return alert('Required libraries are still loading. Please wait a moment and try again.');
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+        const leftMargin = 1.5, rightMargin = 1.0, topMargin = 1.0, bottomMargin = 1.0;
+        const pageHeight = 11.0, pageWidth = 8.5, lineHeight = 1 / 6;
+        const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0 };
+        const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5 };
+        const tokens = fountain.parse(fountainInput.value).tokens;
+        let y = topMargin;
+
+        const checkPageBreak = (linesCount = 1) => {
+            if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
+                doc.addPage(); y = topMargin;
+            }
+        };
+
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(12);
+
+        tokens.forEach(token => {
+            if (!token.type || !token.text || ['page_break', 'section', 'synopsis', 'boneyard_begin', 'boneyard_end'].includes(token.type)) return;
+            const textLines = doc.splitTextToSize(token.text.trim(), widths[token.type] || 6.0);
+            if (['scene_heading', 'character', 'transition'].includes(token.type)) { y += lineHeight; }
+            checkPageBreak(textLines.length);
+            doc.setFont('Courier', token.type === 'scene_heading' ? 'bold' : 'normal');
+            if (token.type === 'transition') {
+                doc.text(token.text.trim(), pageWidth - rightMargin, y, { align: 'right' });
+            } else {
+                doc.text(textLines, leftMargin + (indents[token.type] || 0), y);
+            }
+            y += textLines.length * lineHeight;
+        });
+        doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
+    }
+
+    // --- ALL OTHER ORIGINAL FEATURE FUNCTIONS ---
+    
+    function saveProjectData() {
+        if (fountainInput) { projectData.projectInfo.scriptContent = fountainInput.value; }
+        localStorage.setItem('universalFilmProject_ToScript', JSON.stringify(projectData));
+    }
+
+    function loadProjectData() {
+        const savedData = localStorage.getItem('universalFilmProject_ToScript');
+        if (savedData) {
+            try { projectData = JSON.parse(savedData); if (!projectData.projectInfo) throw new Error("Invalid data"); } 
+            catch (e) { projectData = { projectInfo: { projectName: "Untitled", prodName: "Author", scriptContent: "", scenes: [] } }; }
+        }
+        if (fountainInput && projectData.projectInfo.scriptContent) {
+            fountainInput.value = projectData.projectInfo.scriptContent;
+        }
+    }
+    
+    function openFountainFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            fountainInput.value = e.target.result;
+            clearPlaceholder();
+            history.add(fountainInput.value);
+            saveProjectData();
+            switchView('write');
+        };
+        reader.readAsText(file);
+    }
+
+    function renderEnhancedCardView() {
+        const cardContainer = document.getElementById('card-container');
+        if (!cardContainer) return;
+        const scenes = projectData.projectInfo.scenes;
+        if (!scenes || scenes.length === 0) {
+            cardContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: var(--muted-text-color);"><i class="fas fa-film" style="font-size: 4rem; margin-bottom: 2rem; opacity: 0.3;"></i><h3>No scenes found</h3><p>Write some scenes in the editor to see them here.</p></div>`;
+            return;
+        }
+        cardContainer.innerHTML = scenes.map(scene => `
+            <div class="scene-card" data-scene-number="${scene.number}">
+                <div class="scene-card-content">
+                    <div class="card-header">
+                        <div class="card-scene-title" contenteditable="true">${scene.heading}</div>
+                        <input class="card-scene-number" type="text" value="#${scene.number}" maxlength="4" />
+                    </div>
+                    <div class="card-body">
+                        <textarea class="card-description">${scene.description.join('\n')}</textarea>
+                    </div>
+                    <div class="card-watermark">@TO SCRIPT</div>
+                </div>
+                <div class="card-actions">
+                    <button class="icon-btn share-card-btn" data-action="share-card" title="Share Scene"><i class="fas fa-share-alt"></i></button>
+                </div>
+            </div>`).join('');
+        bindCardEditingEvents();
+    }
+
+    function bindCardEditingEvents() {
+        const cardContainer = document.getElementById('card-container');
+        if (!cardContainer) return;
+        cardContainer.removeEventListener('input', handleCardInput);
+        cardContainer.addEventListener('input', handleCardInput);
+    }
+
+    function handleCardInput() {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(syncCardsToEditor, 750);
+    }
+
+    function syncCardsToEditor() {
+        const cardContainer = document.getElementById('card-container');
+        if (!cardContainer || !fountainInput) return;
+        let scriptText = '';
+        cardContainer.querySelectorAll('.scene-card').forEach(card => {
+            const title = card.querySelector('.card-scene-title')?.textContent.trim() || '';
+            const description = card.querySelector('.card-description')?.value.trim() || '';
+            if (title) { scriptText += `${title.toUpperCase()}\n\n`; }
+            if (description) { scriptText += `${description}\n\n`; }
+        });
+        fountainInput.value = scriptText.trim();
+        history.add(fountainInput.value);
+        saveProjectData();
+    }
+
+    function addNewSceneCard() {
+        if (!fountainInput) return;
+        const newSceneText = `\n\nINT. NEW SCENE - DAY\n\n`;
+        fountainInput.value = (fountainInput.value.trim() + newSceneText).trim();
+        history.add(fountainInput.value);
+        projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+        saveProjectData();
+        renderEnhancedCardView();
+        const cardContainer = document.getElementById('card-container');
+        if (cardContainer && cardContainer.lastElementChild) {
+            cardContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cardContainer.lastElementChild.querySelector('.card-scene-title')?.focus();
+        }
+    }
+    
+    function handleActionBtn(e) {
+        const action = e.currentTarget.dataset.action;
+        const cycle = (options) => {
+            const { value, selectionStart } = fountainInput;
+            const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1;
+            const lineEnd = value.indexOf('\n', selectionStart) > -1 ? value.indexOf('\n', selectionStart) : value.length;
+            const currentLine = value.substring(lineStart, lineEnd);
+            let currentIndex = -1;
+            for (let i = 0; i < options.length; i++) { if (currentLine.includes(options[i])) { currentIndex = i; break; } }
+            const nextOption = options[(currentIndex + 1) % options.length];
+            if (currentIndex > -1) {
+                fountainInput.setRangeText(currentLine.replace(options[currentIndex], nextOption), lineStart, lineEnd);
+            } else {
+                fountainInput.setRangeText(nextOption, selectionStart, selectionStart);
+            }
+        };
+        switch (action) {
+            case 'caps':
+                const { selectionStart, selectionEnd, value } = fountainInput;
+                const target = value.substring(selectionStart, selectionEnd);
+                fountainInput.setRangeText(target === target.toUpperCase() ? target.toLowerCase() : target.toUpperCase(), selectionStart, selectionEnd, 'select');
+                break;
+            case 'parens':
+                fountainInput.setRangeText(`(${fountainInput.value.substring(fountainInput.selectionStart, fountainInput.selectionEnd)})`, fountainInput.selectionStart, fountainInput.selectionEnd, 'select');
+                break;
+            case 'scene': cycle(['INT. ', 'EXT. ', 'INT./EXT. ']); break;
+            case 'time': cycle([' - DAY', ' - NIGHT']); break;
+            case 'transition': cycle(['FADE IN:', 'FADE OUT.', 'CUT TO:']); break;
+        }
+        fountainInput.focus();
+        history.add(fountainInput.value);
+    }
+    
+    // --- EVENT LISTENERS & INITIALIZATION ---
+    function setupEventListeners() {
+        document.body.addEventListener('click', (e) => {
+            const target = e.target.closest('[id], [data-action]');
+            if (!target) return;
+
+            const id = target.id;
+            const action = target.dataset.action;
+
+            if (target.closest('.dropdown-content, .side-menu nav > a') && !target.closest('.dropdown-container')) {
+                 menuPanel.classList.remove('open');
+            }
+
+            if (id === 'save-menu-btn') { e.preventDefault(); target.parentElement.classList.toggle('open'); return; }
+            if (action === 'share-card') { e.preventDefault(); /* Logic for sharing card needed */ return; }
+
+            const actions = {
+                'show-script-btn': () => switchView('script'),
+                'show-write-btn-header': () => switchView('write'),
+                'show-write-btn-card-header': () => switchView('write'),
+                'card-view-btn': () => switchView('card'),
+                'hamburger-btn': () => menuPanel.classList.toggle('open'),
+                'hamburger-btn-script': () => menuPanel.classList.toggle('open'),
+                'hamburger-btn-card': () => menuPanel.classList.toggle('open'),
+                'scene-navigator-btn': () => { /* updateSceneNavigator(); */ sceneNavigatorPanel.classList.add('open'); },
+                'scene-navigator-btn-script': () => { /* updateSceneNavigator(); */ sceneNavigatorPanel.classList.add('open'); },
+                'close-navigator-btn': () => sceneNavigatorPanel.classList.remove('open'),
+                'save-pdf-english-btn': saveAsPdfEnglish,
+                'save-pdf-unicode-btn': saveAsPdfUnicode,
+                'add-new-card-btn': addNewSceneCard,
+                'undo-btn-top': () => history.undo(),
+                'redo-btn-top': () => history.redo(),
+                'zoom-in-btn': handleZoomIn,
+                'zoom-out-btn': handleZoomOut,
+                'open-btn': () => fileInput.click(),
+                'new-btn': () => { if (confirm('Start new project?')) { fountainInput.value = ''; setPlaceholder(); history.stack = [""]; history.currentIndex = 0; history.updateButtons(); saveProjectData(); switchView('write'); } },
+            };
+            
+            if (id && actions[id]) {
+                e.preventDefault();
+                actions[id]();
+            }
+        });
+
+        document.querySelectorAll('.action-btn, .keyboard-btn').forEach(btn => btn.addEventListener('click', handleActionBtn));
+        fountainInput.addEventListener('focus', clearPlaceholder);
+        fountainInput.addEventListener('blur', setPlaceholder);
+        fountainInput.addEventListener('input', () => {
+            history.add(fountainInput.value);
+            saveProjectData();
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                if (currentView === 'card') {
+                    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+                    renderEnhancedCardView();
+                }
+            }, 500);
+        });
+        fileInput.addEventListener('change', openFountainFile);
+    }
+
+    function initialize() {
+        loadProjectData();
+        setPlaceholder();
+        setupEventListeners();
+        history.updateButtons();
+    }
+
+    initialize();
+});document.addEventListener('DOMContentLoaded', () => {
+    console.log("🎬 ToscripT Professional - Fully Restored & Functional");
+
+    // --- GLOBAL STATE ---
+    let projectData = {
         projectInfo: { projectName: "Untitled", prodName: "Author", scriptContent: "", scenes: [] }
     };
     let fontSize = 16;
