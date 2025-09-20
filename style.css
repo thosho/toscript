@@ -115,8 +115,9 @@ body.fullscreen-active #desktop-side-toolbar {
     white-space: pre-wrap; /* Respects line breaks within the element */
 }
 
-/* CODE ONE WORKING FORMATTING */
-.scene-heading { 
+.scene-heading {
+    display: flex;
+    justify-content: space-between;
     font-weight: bold !important; 
     text-transform: uppercase !important; 
     color: #000000 !important;
