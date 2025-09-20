@@ -346,46 +346,44 @@ FADE OUT.`;
         return scenes;
     }
 
-    // Patch: syncAll function for Bidirectional Sync
-    function syncAll() {
-        // Extract scenes from current text
-        projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
-        // If in card view, re-render cards
-        if (currentView === 'card') {
-            renderEnhancedCardView();
-        }
-        // Rebuild text from scenes (for consistency)
+    function syncAll(fromViewSwitch = false) {
+    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+    if (currentView === 'card') {
+        renderEnhancedCardView();
+    }
+    if (fromViewSwitch) { // Only rebuild text when switching views
         syncCardsToEditor();
-        saveProjectData(); // Persist changes
-        console.log('Synced text and cards');
     }
+    saveProjectData();
+    console.log('Synced text and cards');
+}
 
-    // View Switching
     function switchView(view) {
-        console.log(`Switching to view: ${view}`);
-        currentView = view;
-        [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
-        [mainHeader, scriptHeader, cardHeader].forEach(h => h && (h.style.display = 'none'));
-        hideMobileToolbar();
+    console.log(`Switching to view: ${view}`);
+    currentView = view;
+    [writeView, scriptView, cardView].forEach(v => v?.classList.remove('active'));
+    [mainHeader, scriptHeader, cardHeader].forEach(h => h && (h.style.display = 'none'));
+    hideMobileToolbar();
 
-        if (view === 'script') {
-            scriptView?.classList.add('active');
-            if (scriptHeader) scriptHeader.style.display = 'flex';
-            renderEnhancedScript();
-        } else if (view === 'card') {
-            syncAll(); // NEW: Ensure sync before rendering
-            cardView?.classList.add('active');
-            if (cardHeader) cardHeader.style.display = 'flex';
-            renderEnhancedCardView();
-        } else {
-            writeView?.classList.add('active');
-            if (mainHeader) mainHeader.style.display = 'flex';
-            setTimeout(() => {
-                if (fountainInput) fountainInput.focus();
-                if (window.innerWidth < 768 && currentView === 'write') showMobileToolbar();
-            }, 200);
-        }
+    if (view === 'script') {
+        scriptView?.classList.add('active');
+        if (scriptHeader) scriptHeader.style.display = 'flex';
+        renderEnhancedScript();
+    } else if (view === 'card') {
+        syncAll(true); // Pass true for full sync on switch
+        cardView?.classList.add('active');
+        if (cardHeader) cardHeader.style.display = 'flex';
+        renderEnhancedCardView();
+    } else {
+        writeView?.classList.add('active');
+        if (mainHeader) mainHeader.style.display = 'flex';
+        setTimeout(() => {
+            if (fountainInput) fountainInput.focus();
+            if (window.innerWidth < 768 && currentView === 'write') showMobileToolbar();
+        }, 200);
     }
+}
+
 
     // Filter functionality
     function handleFilterChange() {
@@ -617,40 +615,38 @@ FADE OUT.`;
         }
     }
 
-    // Patch: Update syncCardsToEditor for Better Reconstruction
     function syncCardsToEditor() {
-        const cardContainer = document.getElementById('card-container');
-        if (!cardContainer || !fountainInput) return;
+    const cardContainer = document.getElementById('card-container');
+    if (!cardContainer || !fountainInput) return;
 
-        let scriptText = '';
-        const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
-        cards.forEach((card, index) => {
-            const titleElement = card.querySelector('.card-scene-title');
-            const descriptionElement = card.querySelector('.card-description');
-            let title = titleElement ? titleElement.textContent.trim() : '';
-            let description = descriptionElement ? descriptionElement.value.trim() : '';
+    let scriptText = '';
+    const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
+    cards.forEach((card, index) => {
+        const titleElement = card.querySelector('.card-scene-title');
+        const descriptionElement = card.querySelector('.card-description');
+        let title = titleElement ? titleElement.textContent.trim() : '';
+        let description = descriptionElement ? descriptionElement.value.trim() : '';
 
-            // Ensure valid heading
-            if (title && !title.match(/(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i)) {
-                title = 'INT. ' + title.toUpperCase();
-            } else {
-                title = title.toUpperCase();
-            }
-
-            // Re-number scene
-            const numberElement = card.querySelector('.card-scene-number');
-            if (numberElement) numberElement.value = index + 1;
-
-            scriptText += title + '\n';
-            if (description) scriptText += description + '\n\n';
-        });
-
-        if (scriptText.trim() !== fountainInput.value.trim()) {
-            fountainInput.value = scriptText.trim();
-            history.add(fountainInput.value);
-            saveProjectData();
+        if (title && !title.match(/(INT\.|EXT\.|INT\.\/EXT\.|EXT\.\/INT\.)/i)) {
+            title = 'INT. ' + title.toUpperCase();
+        } else {
+            title = title.toUpperCase();
         }
+
+        const numberElement = card.querySelector('.card-scene-number');
+        if (numberElement) numberElement.value = index + 1;
+
+        scriptText += title + '\n';
+        if (description) scriptText += description + '\n\n';
+    });
+
+    const trimmedScript = scriptText.trim();
+    if (trimmedScript !== fountainInput.value.trim() && trimmedScript !== '') { // Avoid setting to empty
+        fountainInput.value = trimmedScript;
+        history.add(fountainInput.value);
+        saveProjectData();
     }
+}
 
     // REPLACEMENT FUNCTION: Directly adds a new card and syncs it back to the main editor.
     function addNewSceneCard() {
@@ -1289,20 +1285,24 @@ FADE OUT.`;
         // Make jumpToScene globally available
         window.jumpToScene = jumpToScene;
 
-        // Fountain input listeners
-        if (fountainInput) {
-            fountainInput.addEventListener('input', () => {
-                // These actions happen immediately on every keystroke
-                history.add(fountainInput.value);
-                saveProjectData(); // This also updates the projectData.projectInfo.scenes array
+       if (fountainInput) {
+    fountainInput.addEventListener('input', () => {
+        clearPlaceholder(); // Ensure placeholder doesn't interfere
+        history.add(fountainInput.value);
+        saveProjectData();
 
-                // Now, we handle the UI update with a debounce to prevent lag
-                clearTimeout(debounceTimeout);
-                debounceTimeout = setTimeout(() => {
-                    syncAll(); // NEW: Sync everything after debounce
-                }, 500); // 500 millisecond delay
-            });
-        }
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            // Only update scenes array without overwriting input
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+            // If in card view, re-render cards but DON'T call syncCardsToEditor() here
+            if (currentView === 'card') {
+                renderEnhancedCardView();
+            }
+            console.log('Updated scenes from text input - no overwrite');
+        }, 500);
+    });
+}
 
         // File input
         if (fileInput) fileInput.addEventListener('change', openFountainFile);
