@@ -368,7 +368,7 @@ function extractScenesFromText(text) {
             projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
             cardView?.classList.add('active');
             if (cardHeader) cardHeader.style.display = 'flex';
-            renderEnhancedCardView();
+            refreshCardViewData();
         } else {
             writeView?.classList.add('active');
             if (mainHeader) mainHeader.style.display = 'flex';
@@ -381,6 +381,14 @@ function extractScenesFromText(text) {
         }
     }
 
+    // ENHANCED: Always refresh card view when switching to it
+function refreshCardViewData() {
+    console.log("🎬 Refreshing card view data from script...");
+    projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+    renderEnhancedCardView();
+    bindCardEditingEvents();
+    updateSceneNavigator();
+}
     // Filter functionality
     function handleFilterChange() {
         const selectedValue = filterCategorySelect?.value;
@@ -1321,23 +1329,38 @@ async function saveAsPdfUnicode() {
         // Make jumpToScene globally available
         window.jumpToScene = jumpToScene;
 
-       // Fountain input listeners
-if (fountainInput) {
+  if (fountainInput) {
     fountainInput.addEventListener('input', () => {
         // These actions happen immediately on every keystroke
         history.add(fountainInput.value);
-        saveProjectData(); // This also updates the projectData.projectInfo.scenes array
-
-        // Now, we handle the UI update with a debounce to prevent lag
+        saveProjectData();
+        
+        // Clear any existing timeout
         clearTimeout(debounceTimeout);
         debounceTimeout = setTimeout(() => {
-            // This code runs only after the user has stopped typing for 500ms
+            console.log("🔄 Bidirectional sync triggered after typing...");
+            
+            // ALWAYS update scenes data from the script text
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+            
+            // Update different views based on current view
             if (currentView === 'card') {
-                console.log('Syncing text editor changes back to Card View...');
+                console.log("📝 Syncing script changes to Card View...");
                 renderEnhancedCardView();
+                bindCardEditingEvents(); // Re-bind events after rendering
+            } else if (currentView === 'script') {
+                console.log("📄 Updating script preview...");
+                renderEnhancedScript();
             }
-        }, 500); // 500 millisecond delay
+            
+            // ALWAYS update the scene navigator regardless of view
+            updateSceneNavigator();
+            
+            console.log(`✅ Sync complete: ${projectData.projectInfo.scenes.length} scenes found`);
+        }, 500);
     });
+}
+
 }
 
         // File input
