@@ -493,80 +493,56 @@ FADE OUT.`;
         if (fountainInput) fountainInput.style.fontSize = `${fontSize}px`;
     }
 
+// UPDATED RENDERER: Uses the new parser to create clean HTML.
     function renderEnhancedScript() {
-    if (!screenplayOutput || !fountainInput) return;
+        if (!screenplayOutput || !fountainInput) return;
 
-    const text = fountainInput.value;
-    const lines = text.split('\n');
-    let scriptHtml = '';
-    let sceneNumber = 0;
+        const tokens = parseFountain(fountainInput.value);
+        let scriptHtml = '';
+        let isTitlePage = true;
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const trimmedLine = line.trim();
+        tokens.forEach(token => {
+            // Once we hit a scene heading, the title page is over
+            if (token.type === 'sceneheading') isTitlePage = false;
 
-        if (!trimmedLine) {
-            scriptHtml += '<div class="empty-line"></div>';
-            continue;
-        }
-
-        // Title Page elements (TITLE:, AUTHOR:)
-        if (/^(TITLE|AUTHOR|CREDIT|SOURCE):/i.test(trimmedLine)) {
-            scriptHtml += `<div class="title-page-element">${trimmedLine}</div>`;
-            continue;
-        }
-
-        // Scene Headings - Industry Standard: INT./EXT. LOCATION - TIME
-        if (/^(INT\.|EXT\.|INT\.\\/EXT\.|EXT\.\\/INT\.)/i.test(trimmedLine)) {
-            sceneNumber++;
-            const sceneNum = showSceneNumbers ? `${sceneNumber}. ` : '';
-            scriptHtml += `<div class="scene-heading">${sceneNum}${trimmedLine.toUpperCase()}</div>`;
-            continue;
-        }
-
-        // Transitions: CUT TO:, FADE OUT., etc.
-        if (trimmedLine.endsWith('TO:') || /^(FADE OUT|FADE IN|CUT TO|DISSOLVE TO)\.?$/i.test(trimmedLine)) {
-            scriptHtml += `<div class="transition">${trimmedLine.toUpperCase()}</div>`;
-            continue;
-        }
-
-        // Character Names - All caps line followed by dialogue
-        if (trimmedLine === trimmedLine.toUpperCase() && !trimmedLine.startsWith('(')) {
-            // Check if next non-empty line is dialogue (not all caps)
-            let nextLineIndex = i + 1;
-            while (nextLineIndex < lines.length && !lines[nextLineIndex].trim()) nextLineIndex++;
-            
-            if (nextLineIndex < lines.length) {
-                const nextLine = lines[nextLineIndex].trim();
-                if (nextLine && nextLine !== nextLine.toUpperCase() && !nextLine.startsWith('(')) {
-                    scriptHtml += `<div class="character">${line}</div>`;
-                    continue;
-                }
+            switch (token.type) {
+                case 'titlepage':
+                    if (isTitlePage) {
+                        // Simple formatting for title elements
+                        scriptHtml += `<div class="title-page-element">${token.text}</div>`;
+                    } else {
+                        // Treat as action if it appears after the first scene
+                        scriptHtml += `<div class="action">${token.text}</div>`;
+                    }
+                    break;
+                case 'sceneheading':
+                    const sceneNum = showSceneNumbers ? `${token.sceneNumber}. ` : '';
+                    scriptHtml += `<div class="scene-heading">${sceneNum}${token.text}</div>`;
+                    break;
+                case 'action':
+                    scriptHtml += `<div class="action">${token.text}</div>`;
+                    break;
+                case 'character':
+                    scriptHtml += `<div class="character">${token.text}</div>`;
+                    break;
+                case 'dialogue':
+                    scriptHtml += `<div class="dialogue">${token.text}</div>`;
+                    break;
+                case 'parenthetical':
+                    scriptHtml += `<div class="parenthetical">${token.text}</div>`;
+                    break;
+                case 'transition':
+                    scriptHtml += `<div class="transition">${token.text}</div>`;
+                    break;
+                case 'empty':
+                    break;
             }
-        }
+        });
 
-        // Parentheticals (must follow character or dialogue)
-        if (trimmedLine.startsWith('(') && trimmedLine.endsWith(')')) {
-            scriptHtml += `<div class="parenthetical">${line}</div>`;
-            continue;
-        }
-
-        // Check if this is dialogue (follows a character)
-        const previousLines = scriptHtml.split('</div>');
-        const lastElement = previousLines[previousLines.length - 2];
-        if (lastElement && (lastElement.includes('class="character"') || lastElement.includes('class="parenthetical"'))) {
-            scriptHtml += `<div class="dialogue">${line}</div>`;
-            continue;
-        }
-
-        // Everything else is action
-        scriptHtml += `<div class="action">${line}</div>`;
+        screenplayOutput.innerHTML = scriptHtml;
     }
 
-    screenplayOutput.innerHTML = scriptHtml;
-    console.log('Enhanced script rendered with proper formatting');
-}
-
+    
     // FIXED: Enhanced Card View with Full Functionality
     function renderEnhancedCardView() {
         const cardContainer = document.getElementById('card-container');
