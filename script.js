@@ -702,61 +702,51 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-    // RESTORED: generateCardImageBlob - Clones the real card for exact layout matching your original print style
+   // ORIGINAL: generateCardImageBlob - Matches your screenshot's print style (bold heading left, number right, divider, full text block, watermark)
 async function generateCardImageBlob(cardElement) {
-    // Clone the actual card element to capture exact on-screen styling (from your CSS)
-    const clone = cardElement.cloneNode(true);
-    
-    // Remove interactive elements not needed in print (e.g., buttons, actions)
-    const actions = clone.querySelector('.card-actions');
-    if (actions) actions.remove();
-    
-    // Adjust clone for print: offscreen, full size, white background, black text
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.width = '480px';  // 5 inches at 96dpi for print
-    clone.style.height = '288px'; // 3 inches at 96dpi
-    clone.style.backgroundColor = '#ffffff';
-    clone.style.color = '#000000';
-    clone.style.border = '2px solid #000000';
-    clone.style.padding = '15px';
-    clone.style.boxSizing = 'border-box';
-    clone.style.fontFamily = "'Courier Prime', 'Courier New', monospace";
-    clone.style.fontSize = '13px';
-    clone.style.lineHeight = '1.5';
-    
-    // Ensure watermark is visible but subtle
-    const watermark = clone.querySelector('.card-watermark');
-    if (watermark) {
-        watermark.style.color = 'rgba(0,0,0,0.3)';
-        watermark.style.position = 'absolute';
-        watermark.style.bottom = '8px';
-        watermark.style.right = '12px';  // Position like in your screenshot
-        watermark.style.fontSize = '10px';
-    }
-    
-    // Append clone to body for rendering
-    document.body.appendChild(clone);
-    
-    // Wait for fonts to load to avoid rendering issues
-    await document.fonts.ready;
-    
-    try {
-        // Capture with html2canvas at high scale for print quality
-        const canvas = await html2canvas(clone, {
-            scale: 3,  // High resolution for sharp print
-            backgroundColor: '#ffffff',
-            logging: false
-        });
-        return new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
-    } catch (error) {
-        console.error('Card image generation failed:', error);
-        return null;
-    } finally {
-        // Clean up
-        document.body.removeChild(clone);
-    }
+    // Extract data from the on-screen card
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '1';
+    const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'INT. DETECTIVE\'S OFFICE - NIGHT';
+    const description = cardElement.querySelector('.card-description')?.value || 'The office is dimly lit with case files scattered everywhere.\n\nDETECTIVE VIKRAM (40s, weary) sits behind a cluttered desk, staring at cold coffee.\n\nThe door creaks open. MAYA (30s, mysterious) steps out of the shadows.';
+
+    // Create temporary printable card with original styling
+    const printableCard = document.createElement('div');
+    printableCard.className = 'scene-card card-for-export';  // Use your exact CSS class for styling
+    printableCard.style.width = '3in';  // Original print size
+    printableCard.style.height = '5in';
+    printableCard.style.backgroundColor = 'white';
+    printableCard.style.color = 'black';
+    printableCard.style.border = '1px solid black';
+    printableCard.style.padding = '0.5in';
+    printableCard.style.fontFamily = "'Courier Prime', monospace";
+    printableCard.style.fontSize = '12pt';
+    printableCard.style.lineHeight = '1';
+    printableCard.style.position = 'absolute';
+    printableCard.style.left = '-9999px';
+
+    printableCard.innerHTML = `
+        <div class="card-header" style="display: flex; justify-content: space-between; margin-bottom: 0.5in; border-bottom: 1px solid black;">
+            <span style="font-weight: bold; text-transform: uppercase;">${sceneHeading}</span>
+            <span style="font-weight: bold;">#${sceneNumber}</span>
+        </div>
+        <div class="card-body" style="white-space: pre-wrap;">${description}</div>
+        <div class="card-watermark" style="position: absolute; bottom: 0.25in; right: 0.25in; font-size: 8pt; color: gray;">@ToscripT</div>
+    `;
+
+    document.body.appendChild(printableCard);
+
+    // Capture with html2canvas (original settings)
+    const canvas = await html2canvas(printableCard, {
+        scale: 2,
+        backgroundColor: 'white'
+    });
+
+    const blob = await new Promise(resolve => canvas.toBlob(resolve));
+
+    document.body.removeChild(printableCard);
+    return blob;
 }
+
 
 
     // REPLACEMENT FUNCTION: for sharing a single card
