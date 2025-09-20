@@ -527,6 +527,10 @@ FADE OUT.`;
     // =======================================================================
     // END OF REPLACEMENT BLOCK
     // =======================================================================
+
+    // =======================================================================
+    // END OF REPLACEMENT BLOCK
+    // =======================================================================
     // Card editing functionality
     function bindCardEditingEvents() {
         const cardContainer = document.getElementById('card-container');
