@@ -1047,40 +1047,66 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
     }
 
+// FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
 function saveAsPdfEnglish() {
     if (typeof window.jspdf === 'undefined') {
-        alert('PDF library not loaded. Please check your internet connection.');
+        alert('PDF library (jsPDF) not loaded. Check console and script tags.');
         return;
     }
-
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('portrait', 'pt', 'letter');
-    
-    const tokens = parseFountain(fountainInput.value);
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
+
+    // Standard Screenplay Layout Constants (in inches)
+    const leftMargin = 1.5;
+    const rightMargin = 1.0;
+    const topMargin = 1.0;
+    const bottomMargin = 1.0;
+    const pageHeight = 11.0;
+    const pageWidth = 8.5;
+    const lineHeight = 1 / 6;
+    const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0, transition: 0 };
+    const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5, transition: 6.0 };
+
+    const tokens = parseFountain(fountainInput.value || '');
     if (tokens.length === 0) {
         alert('No content to export.');
         return;
     }
 
-    let y = 72; // 1 inch top margin
-    doc.setFont('courier');
+    let y = topMargin;
+    const checkPageBreak = (linesCount = 1) => {
+        if (y + linesCount * lineHeight > pageHeight - bottomMargin) {
+            doc.addPage();
+            y = topMargin;
+        }
+    };
+
+    doc.setFont('Courier', 'normal');
     doc.setFontSize(12);
 
     tokens.forEach(token => {
-        if (token.text) {
-            doc.text(token.text, 108, y); // 1.5 inch left margin
-            y += 14; // Line spacing
-            if (y > 700) { // Page break
-                doc.addPage();
-                y = 72;
-            }
+        if (!token.type || !token.text) {
+            if (token.type === 'empty') y += lineHeight;
+            return;
         }
+        const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+        if (['scene_heading', 'character', 'transition'].includes(token.type)) checkPageBreak(1);
+        checkPageBreak(textLines.length);
+
+        doc.setFont('Courier', (token.type === 'scene_heading' || token.type === 'transition') ? 'bold' : 'normal');
+
+        if (token.type === 'transition') {
+            doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
+        } else {
+            const x = leftMargin + (indents[token.type] || 0);
+            doc.text(textLines, x, y);
+        }
+        y += textLines.length * lineHeight;
     });
 
-    doc.save(`${projectData.projectInfo.projectName}.pdf`);
-    alert('✅ PDF exported!');
+    doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
+    console.log('Selectable Text PDF exported.');
 }
-
 
     // FIXED: .pdf (Unicode Image) - With font preloading and multi-page fix
 async function preloadResourcesForCanvas() {
