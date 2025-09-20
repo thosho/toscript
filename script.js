@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let showSceneNumbers = true;
     let currentView = 'write';
     let debounceTimeout = null;
+    let isUpdatingFromSync = false;  // Add this line here
 
     // DOM elements
     const fountainInput = document.getElementById('fountain-input');
@@ -1034,115 +1035,226 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-    function saveAsFilmProj() {
-        projectData.projectInfo.scriptContent = fountainInput.value;
-        const filmproj = {
-            fileVersion: '1.0',
-            projectInfo: projectData.projectInfo,
-            scenes: projectData.projectInfo.scenes,
-            created: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(filmproj, null, 2)], { type: 'application/json' });
-        downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
-    }
-
-// FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
-function saveAsPdfEnglish() {
-    if (typeof window.jspdf === 'undefined') {
-        alert('PDF library (jsPDF) not loaded. Check console and script tags.');
-        return;
-    }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'in', format: 'letter' });
-
-    // Standard Screenplay Layout Constants (in inches)
-    const leftMargin = 1.5;
-    const rightMargin = 1.0;
-    const topMargin = 1.0;
-    const bottomMargin = 1.0;
-    const pageHeight = 11.0;
-    const pageWidth = 8.5;
-    const lineHeight = 1 / 6;
-    const indents = { scene_heading: 0, action: 0, character: 2.2, parenthetical: 1.6, dialogue: 1.0, transition: 0 };
-    const widths = { scene_heading: 6.0, action: 6.0, character: 2.8, parenthetical: 2.0, dialogue: 3.5, transition: 6.0 };
-
-    const tokens = parseFountain(fountainInput.value || '');
-    if (tokens.length === 0) {
-        alert('No content to export.');
-        return;
-    }
-
-    let y = topMargin;
-    const checkPageBreak = (linesCount = 1) => {
-        if (y + linesCount * lineHeight > pageHeight - bottomMargin) {
-            doc.addPage();
-            y = topMargin;
+    // FIXED: Complete FilmProj Export
+function saveAsFilmProj() {
+    console.log('🎬 Saving complete FilmProj file...');
+    
+    try {
+        // Update project data before saving
+        if (fountainInput) {
+            projectData.projectInfo.scriptContent = fountainInput.value;
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
         }
-    };
 
-    doc.setFont('Courier', 'normal');
-    doc.setFontSize(12);
+        // Create comprehensive FilmProj structure
+        const filmProj = {
+            fileVersion: '1.2',
+            application: 'ToscripT Professional',
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            projectInfo: {
+                projectName: projectData.projectInfo.projectName || 'Untitled',
+                prodName: projectData.projectInfo.prodName || 'Author',
+                scriptContent: projectData.projectInfo.scriptContent || '',
+                scenes: projectData.projectInfo.scenes || [],
+                settings: {
+                    fontSize: fontSize,
+                    showSceneNumbers: showSceneNumbers,
+                    autoSave: !!autoSaveInterval
+                }
+            },
+            // Include card data for complete restoration
+            cardData: [],
+            // Include history for undo/redo
+            history: {
+                stack: history.stack.slice(),
+                currentIndex: history.currentIndex
+            },
+            // Export metadata
+            exportInfo: {
+                exportedBy: 'ToscripT Professional',
+                exportDate: new Date().toISOString(),
+                version: '1.2'
+            }
+        };
 
-    tokens.forEach(token => {
-        if (!token.type || !token.text) {
-            if (token.type === 'empty') y += lineHeight;
+        // Capture card data if in card view
+        const cardContainer = document.getElementById('card-container');
+        if (cardContainer) {
+            const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
+            filmProj.cardData = cards.map(card => {
+                const titleElement = card.querySelector('.card-scene-title');
+                const descriptionElement = card.querySelector('.card-description');
+                const numberElement = card.querySelector('.card-scene-number');
+                
+                return {
+                    sceneId: card.dataset.sceneId,
+                    sceneNumber: numberElement?.value || '',
+                    title: titleElement?.textContent?.trim() || '',
+                    description: descriptionElement?.value || ''
+                };
+            });
+        }
+
+        // Create and download the file
+        const blob = new Blob([JSON.stringify(filmProj, null, 2)], { 
+            type: 'application/json' 
+        });
+        
+        const filename = `${projectData.projectInfo.projectName}.filmproj`;
+        downloadBlob(blob, filename);
+        
+        alert('✅ Complete .filmproj file saved with all data!');
+        console.log('✅ Complete FilmProj exported');
+
+    } catch (error) {
+        console.error('FilmProj Export Error:', error);
+        alert('❌ Failed to save .filmproj file. Check console for details.');
+    }
+}
+
+// FIXED: PDF Selectable Text Export
+function saveAsPdfEnglish() {
+    console.log('📄 Generating selectable PDF...');
+    
+    if (typeof window.jspdf === 'undefined') {
+        alert('PDF library (jsPDF) not loaded. Please check your internet connection and script tags.');
+        console.error('jsPDF library not found');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    
+    try {
+        const doc = new jsPDF({
+            orientation: 'portrait',
+            unit: 'in',
+            format: 'letter'
+        });
+
+        // Standard screenplay formatting
+        const leftMargin = 1.5;
+        const rightMargin = 1.0;
+        const topMargin = 1.0;
+        const bottomMargin = 1.0;
+        const pageHeight = 11.0;
+        const lineHeight = 1/6;
+
+        const indents = {
+            'sceneheading': 0,
+            'action': 0,
+            'character': 2.2,
+            'parenthetical': 1.6,
+            'dialogue': 1.0,
+            'transition': 0
+        };
+
+        const widths = {
+            'sceneheading': 6.0,
+            'action': 6.0,
+            'character': 2.8,
+            'parenthetical': 2.0,
+            'dialogue': 3.5,
+            'transition': 6.0
+        };
+
+        const tokens = parseFountain(fountainInput.value);
+        
+        if (tokens.length === 0) {
+            alert('No content to export.');
             return;
         }
-        const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
-        if (['scene_heading', 'character', 'transition'].includes(token.type)) checkPageBreak(1);
-        checkPageBreak(textLines.length);
 
-        doc.setFont('Courier', (token.type === 'scene_heading' || token.type === 'transition') ? 'bold' : 'normal');
+        let y = topMargin;
 
-        if (token.type === 'transition') {
-            doc.text(token.text, pageWidth - rightMargin, y, { align: 'right' });
-        } else {
-            const x = leftMargin + (indents[token.type] || 0);
-            doc.text(textLines, x, y);
-        }
-        y += textLines.length * lineHeight;
-    });
+        const checkPageBreak = (linesCount = 1) => {
+            if (y + (linesCount * lineHeight) > pageHeight - bottomMargin) {
+                doc.addPage();
+                y = topMargin;
+            }
+        };
 
-    doc.save(`${projectData.projectInfo.projectName || 'screenplay'}_english.pdf`);
-    console.log('Selectable Text PDF exported.');
-}
+        doc.setFont('Courier', 'normal');
+        doc.setFontSize(12);
 
-    // FIXED: .pdf (Unicode Image) - With font preloading and multi-page fix
-async function preloadResourcesForCanvas() {
-    try {
-        console.log("Preloading fonts for PDF generation...");
-        await document.fonts.ready;
-        console.log("Fonts preloaded successfully.");
+        tokens.forEach(token => {
+            if (!token.type || !token.text || token.type === 'empty') {
+                if (token.type === 'empty') y += lineHeight;
+                return;
+            }
+
+            const textLines = doc.splitTextToSize(token.text, widths[token.type] || 6.0);
+            
+            if (['sceneheading', 'character', 'transition'].includes(token.type)) {
+                checkPageBreak(1);
+            }
+            checkPageBreak(textLines.length);
+
+            doc.setFont('Courier', 
+                (token.type === 'sceneheading' || token.type === 'transition') ? 'bold' : 'normal'
+            );
+
+            if (token.type === 'transition') {
+                doc.text(token.text, 8.5 - rightMargin, y, { align: 'right' });
+            } else {
+                const x = leftMargin + (indents[token.type] || 0);
+                doc.text(textLines, x, y);
+            }
+
+            y += textLines.length * lineHeight;
+        });
+
+        const filename = `${projectData.projectInfo.projectName}_screenplay.pdf`;
+        doc.save(filename);
+        
+        alert('✅ PDF exported successfully!');
+        console.log('✅ Selectable Text PDF exported');
+
     } catch (error) {
-        console.error("Error preloading fonts:", error);
-        alert("Could not preload fonts, PDF export may have issues.");
+        console.error('PDF Export Error:', error);
+        alert('❌ Failed to generate PDF. Check console for details.');
     }
 }
 
+
+// FIXED: PDF Unicode Export
 async function saveAsPdfUnicode() {
+    console.log('🖼️ Generating Unicode PDF...');
+    
     if (typeof window.jspdf === 'undefined' || typeof window.html2canvas === 'undefined') {
-        alert('Required libraries (jsPDF or html2canvas) not loaded. Check console and script tags.');
+        alert('Required libraries (jsPDF or html2canvas) not loaded. Please check your internet connection and script tags.');
+        console.error('Required PDF libraries not found');
         return;
     }
+
     const sourceElement = document.getElementById('screenplay-output');
-    if (!sourceElement || sourceElement.innerText.trim() === '') {
+    if (!sourceElement || !sourceElement.innerText.trim()) {
         alert('Nothing to save. Please switch to the "TO SCRIPT" preview mode first.');
         return;
     }
-    alert('Generating high-quality Unicode PDF, this may take a moment...');
 
-    await preloadResourcesForCanvas();
+    alert('📸 Generating high-quality Unicode PDF, this may take a moment...');
 
     try {
+        await document.fonts.ready;
+        
         const canvas = await html2canvas(sourceElement, {
-            scale: 2,
+            scale: 3,
             backgroundColor: '#ffffff',
             useCORS: true,
-            logging: false // Suppress console logs from the library
+            logging: false,
+            width: sourceElement.scrollWidth,
+            height: sourceElement.scrollHeight
         });
-        const imgData = canvas.toDataURL('image/png', 0.97);
+
+        const imgData = canvas.toDataURL('image/png', 0.98);
+        
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+        });
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
@@ -1151,21 +1263,26 @@ async function saveAsPdfUnicode() {
 
         let heightLeft = imgHeightInPdf;
         let position = 0;
+
         pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
         heightLeft -= pdfHeight;
 
         while (heightLeft > 0) {
-            position -= pdfHeight; // Corrected positioning for multi-page
+            position = heightLeft - imgHeightInPdf;
             pdf.addPage();
             pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeightInPdf);
             heightLeft -= pdfHeight;
         }
 
-        pdf.save(`${projectData.projectInfo.projectName || 'screenplay'}_unicode.pdf`);
-        console.log('Unicode Image PDF exported.');
+        const filename = `${projectData.projectInfo.projectName}_unicode.pdf`;
+        pdf.save(filename);
+        
+        alert('✅ Unicode PDF exported successfully!');
+        console.log('✅ Unicode Image PDF exported');
+
     } catch (error) {
-        console.error("PDF generation failed:", error);
-        alert("An error occurred while creating the Unicode PDF. Check console for details.");
+        console.error('Unicode PDF Export Error:', error);
+        alert('❌ Failed to generate Unicode PDF. Check console for details.');
     }
 }
 
