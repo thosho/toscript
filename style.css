@@ -115,50 +115,77 @@ body.fullscreen-active #desktop-side-toolbar {
     white-space: pre-wrap; /* Respects line breaks within the element */
 }
 
-/* 3. Industry-Standard Spacing and Indentation */
+/* Industry Standard Screenplay Formatting */
 .scene-heading {
     color: #000000 !important;
-    font-weight: bold;
+    font-weight: bold !important;
+    text-align: left;
+    margin: 24px 0 12px 0;
     text-transform: uppercase;
-    margin-top: 18pt; /* Adds one blank line before a new scene */
-    margin-bottom: 12pt;
-    color: #333; /* Lighter color as requested */
-}
-
-.action {
-    margin-bottom: 12pt; /* Standard single line space after action */
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
 }
 
 .character {
-    margin-left: 2.2in; /* Indent from the 1.5in left margin */
+    color: #000000 !important;
+    font-weight: normal;
+    text-align: center;
+    margin: 12px 0 6px 0;
     text-transform: uppercase;
-    margin-bottom: 0; /* Dialogue immediately follows */
-    margin-top: 12pt; /* Space before a new character speaks */
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
 }
 
 .dialogue {
-    margin-left: 1in;
-    margin-right: 1.5in; /* Dialogue block width is ~3.5 inches */
-    margin-bottom: 12pt;
+    color: #000000 !important;
+    font-weight: normal;
+    text-align: left;
+    margin: 0 0 6px 0;
+    margin-left: 96px;
+    margin-right: 144px;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
+    line-height: 1.2;
 }
 
 .parenthetical {
-    margin-left: 1.6in;
-    margin-right: 2.1in;
-    margin-bottom: 0; /* Dialogue immediately follows */
+    color: #000000 !important;
+    font-weight: normal;
+    text-align: center;
+    margin: 0 0 6px 0;
+    font-style: normal;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
+}
+
+.action {
+    color: #000000 !important;
+    font-weight: normal;
+    text-align: left;
+    margin: 12px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
+    line-height: 1.2;
 }
 
 .transition {
+    color: #000000 !important;
+    font-weight: normal;
     text-align: right;
+    margin: 12px 0;
     text-transform: uppercase;
-    font-weight: bold;
-    margin-top: 18pt;
-    margin-bottom: 12pt;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
 }
 
 .title-page-element {
+    color: #000000 !important;
+    font-weight: bold;
     text-align: center;
-    margin-bottom: 12pt;
+    margin: 24px 0;
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    font-size: 12pt;
 }
 
 .icon-btn {
