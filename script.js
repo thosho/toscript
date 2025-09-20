@@ -702,10 +702,10 @@ FADE OUT.`;
         bindCardEditingEvents();
     }
 
-  // ORIGINAL: generateCardImageBlob - Matches your screenshot's print style (bold heading left, number right, divider, full text block, watermark)
+ // REVISED HELPER FUNCTION: Creates a high-quality, 3x5 inch card with darker, bolder text.
 async function generateCardImageBlob(cardElement) {
     // Extract data from the on-screen card
-    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
+    const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
     const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent.trim().toUpperCase() || 'UNTITLED SCENE';
     const description = cardElement.querySelector('.card-description')?.value || '';
 
@@ -713,145 +713,156 @@ async function generateCardImageBlob(cardElement) {
     const printableCard = document.createElement('div');
     printableCard.style.cssText = `
         position: absolute;
-        left: -9999px;
-        width: 3in;
-        height: 5in;
-        background-color: white;
-        color: black;
-        border: 1px solid black;
-        padding: 0.5in;
-        font-family: 'Courier Prime', monospace;
-        font-size: 12pt;
-        line-height: 1;
+        left: -9999px; /* Position it off-screen */
+        width: 480px;  /* 5 inches at 96dpi */
+        height: 288px; /* 3 inches at 96dpi */
+        background-color: #ffffff;
+        border: 1.5px solid #000000;
+        /* --- CHANGED: Set font and make it bolder --- */
+        font-family: 'Courier Prime', 'Courier New', monospace;
+        color: #000000; /* Pure black text */
+        font-weight: 500; /* Make all text slightly bolder to combat rendering lightness */
+        /* ------------------------------------------- */
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
     `;
-
-    // Populate with formatted HTML matching your original layout
+    
+    // Create a concise summary from the full description
+    const descriptionSummary = description.split('\n').slice(0, 4).join('<br>');
+    
+    // Populate the printable card with the correctly formatted HTML
     printableCard.innerHTML = `
-        <div class="card-header" style="display: flex; justify-content: space-between; margin-bottom: 0.5in; border-bottom: 1px solid black;">
-            <span style="font-weight: bold; text-transform: uppercase;">${sceneHeading}</span>
-            <span style="font-weight: bold;">#${sceneNumber}</span>
+        <div style="display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="font-size: 14px; font-weight: 700;">${sceneHeading}</span>
+            <span style="font-size: 14px; font-weight: 700;">${sceneNumber}</span>
         </div>
-        <div class="card-body" style="white-space: pre-wrap;">${description}</div>
-        <div class="card-watermark" style="position: absolute; bottom: 0.25in; right: 0.25in; font-size: 8pt; color: gray;">@ToscripT</div>
+        <div style="flex-grow: 1; font-size: 15px; line-height: 1.6;">
+            ${descriptionSummary}
+        </div>
+        <div style="font-size: 10px; text-align: right; opacity: 0.6; margin-top: auto;">@ToscripT</div>
     `;
-
+    
     document.body.appendChild(printableCard);
 
-    // Capture with html2canvas (original settings)
-    const canvas = await html2canvas(printableCard, {
-        scale: 2,
-        backgroundColor: 'white'
-    });
-
-    const blob = await new Promise(resolve => canvas.toBlob(resolve));
-
-    document.body.removeChild(printableCard);
-    return blob;
-}
- 
-
-
-    // REPLACEMENT FUNCTION: for sharing a single card
-    async function shareSceneCard(sceneId) {
-        const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
-        if (!cardElement) {
-            alert('Could not find the card to share.');
-            return;
-        }
-
-        const blob = await generateCardImageBlob(cardElement);
-        if (!blob) {
-            alert('Failed to create card image.');
-            return;
-        }
-
-        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value;
-        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent || 'Scene';
-        const fileName = `Scene${sceneNumber.replace(/\s/g, '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '')}.png`;
-
-        // Use the modern Web Share API if available (great for mobile)
-        if (navigator.share && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
-            const file = new File([blob], fileName, { type: 'image/png' });
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: sceneHeading,
-                    text: `Scene card from ToscripT: ${sceneHeading}`,
-                });
-            } catch (error) {
-                console.log('Share was cancelled or failed', error);
-            }
-        } else {
-            // Fallback to simple download if Web Share is not supported
-            downloadBlob(blob, fileName);
-        }
-    }
-
-    // REPLACEMENT FUNCTION: Exports all cards into a single, print-friendly PDF.
-    async function saveAllCardsAsImages() {
-        console.log('Generating PDF for all scene cards...');
-
-        // 1. Check for necessary libraries
-        if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-            alert('PDF generation library is not loaded. Cannot create PDF.');
-            return;
-        }
-
-        const cards = document.querySelectorAll('.card-for-export');
-        if (cards.length === 0) {
-            alert('No cards to save.');
-            return;
-        }
-
-        alert(`Preparing to generate a PDF with ${cards.length} cards. This may take a moment...`);
-
-        // 2. Initialize the PDF document (A4 size, units in millimeters)
-        const jsPDF = window.jspdf;
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-        // 3. Define the layout for the cards on the page
-        const cardWidthMM = 127; // 5 inches
-        const cardHeightMM = 76; // 3 inches
-        const pageHeightMM = 297; // A4 page height
-        const pageWidthMM = 210; // A4 page width
-        const topMarginMM = 15;
-        const leftMarginMM = (pageWidthMM - cardWidthMM) / 2; // Centering one card per row
-        const gapMM = 15; // Space between cards vertically for cutting
-
-        let x = leftMarginMM;
-        let y = topMarginMM;
-
+    return new Promise(async (resolve) => {
         try {
-            for (let i = 0; i < cards.length; i++) {
-                // 4. Generate the image data for each card using our existing helper function
-                const blob = await generateCardImageBlob(cards[i]);
-                if (!blob) continue; // Skip if a card fails to generate
+            const canvas = await html2canvas(printableCard, { scale: 3, backgroundColor: '#ffffff' });
+            canvas.toBlob((blob) => {
+                resolve(blob);
+            }, 'image/png', 0.95);
+        } catch (error) {
+            console.error("Card image generation failed:", error);
+            resolve(null);
+        } finally {
+            // IMPORTANT: Always remove the temporary element
+            document.body.removeChild(printableCard);
+        }
+    });
+}
+    
+    // 2. REPLACEMENT FUNCTION for sharing a single card
+    async function shareSceneCard(sceneId) {
+        const cardElement = document.querySelector(`.card-for-export[data-scene-id="${sceneId}"]`);
+        if (!cardElement) {
+            alert('Could not find the card to share.');
+            return;
+        }
 
-                const dataUrl = URL.createObjectURL(blob);
+        const blob = await generateCardImageBlob(cardElement);
+        if (!blob) {
+            alert('Failed to create card image.');
+            return;
+        }
 
-                // 5. Check if the card will fit on the current page. If not, add a new page.
-                if (y + cardHeightMM > pageHeightMM - topMarginMM) {
-                    doc.addPage();
-                    y = topMarginMM; // Reset Y position to the top margin
-                }
+        const sceneNumber = cardElement.querySelector('.card-scene-number')?.value || '#';
+        const sceneHeading = cardElement.querySelector('.card-scene-title')?.textContent || 'Scene';
+        const fileName = `Scene_${sceneNumber.replace('#', '')}_${sceneHeading.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
 
-                // 6. Add the card image to the PDF at the calculated position
-                doc.addImage(dataUrl, 'PNG', x, y, cardWidthMM, cardHeightMM);
+        // Use the modern Web Share API if available (great for mobile)
+        if (navigator.share && navigator.canShare({ files: [new File([blob], fileName, { type: 'image/png' })] })) {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: sceneHeading,
+                    text: `Scene card from ToscripT: ${sceneHeading}`,
+                });
+            } catch (error) {
+                console.log('Share was cancelled or failed:', error);
+            }
+        } else {
+            // Fallback to simple download if Web Share is not supported
+            downloadBlob(blob, fileName);
+        }
+    }
 
-                URL.revokeObjectURL(dataUrl); // Clean up memory
+    // REPLACEMENT FUNCTION: Exports all cards into a single, print-friendly PDF.
+async function saveAllCardsAsImages() {
+    console.log("📄 Generating PDF for all scene cards...");
+    
+    // 1. Check for necessary libraries
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+        alert('❌ PDF generation library is not loaded. Cannot create PDF.');
+        return;
+    }
 
-                // 7. Update the Y position for the next card to be placed below the current one
-                y += cardHeightMM + gapMM;
+    const cards = document.querySelectorAll('.card-for-export');
+    if (cards.length === 0) {
+        alert('No cards to save.');
+        return;
+    }
+
+    alert(`Preparing to generate a PDF with ${cards.length} cards. This may take a moment...`);
+
+    // 2. Initialize the PDF document (A4 size, units in millimeters)
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // 3. Define the layout for the cards on the page
+    const cardWidthMM = 127;  // 5 inches
+    const cardHeightMM = 76;   // 3 inches
+    const pageHeightMM = 297;  // A4 page height
+    const pageWidthMM = 210;   // A4 page width
+    const topMarginMM = 15;
+    const leftMarginMM = (pageWidthMM - (cardWidthMM * 1)) / 2; // Centering one card per row
+    const gapMM = 15;          // Space between cards vertically for cutting
+
+    let x = leftMarginMM;
+    let y = topMarginMM;
+
+    try {
+        for (let i = 0; i < cards.length; i++) {
+            // 4. Generate the image data for each card using our existing helper function
+            const blob = await generateCardImageBlob(cards[i]);
+            if (!blob) continue; // Skip if a card fails to generate
+
+            const dataUrl = URL.createObjectURL(blob);
+
+            // 5. Check if the card will fit on the current page. If not, add a new page.
+            if (y + cardHeightMM > pageHeightMM - topMarginMM) {
+                doc.addPage();
+                y = topMarginMM; // Reset Y position to the top margin
             }
 
-            // 8. Save the completed PDF file
-            doc.save('ToscripT_AllCards.pdf');
-            alert(`PDF created successfully with ${cards.length} cards!`);
-        } catch (error) {
-            console.error('Failed to generate PDF', error);
-            alert('An error occurred while creating the PDF. Please check the console for details.');
+            // 6. Add the card image to the PDF at the calculated position
+            doc.addImage(dataUrl, 'PNG', x, y, cardWidthMM, cardHeightMM);
+            URL.revokeObjectURL(dataUrl); // Clean up memory
+
+            // 7. Update the Y position for the next card to be placed below the current one
+            y += cardHeightMM + gapMM;
         }
+
+        // 8. Save the completed PDF file
+        doc.save('ToscripT_All_Cards.pdf');
+        alert(`🎉 PDF created successfully with ${cards.length} cards!`);
+
+    } catch (error) {
+        console.error("Failed to generate PDF:", error);
+        alert("An error occurred while creating the PDF. Please check the console for details.");
     }
+}
 
     // Action buttons handling
     function handleActionBtn(e) {
