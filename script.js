@@ -1050,17 +1050,86 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-    function saveAsFilmProj() {
-        projectData.projectInfo.scriptContent = fountainInput.value;
-        const filmproj = {
-            fileVersion: '1.0',
-            projectInfo: projectData.projectInfo,
-            scenes: projectData.projectInfo.scenes,
-            created: new Date().toISOString()
+    // ENHANCED: Complete .filmproj save with all project data
+function saveAsFilmProj() {
+    try {
+        // Update project data before saving
+        if (fountainInput) {
+            projectData.projectInfo.scriptContent = fountainInput.value;
+            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
+        }
+
+        // Create comprehensive project file
+        const filmProj = {
+            fileVersion: '2.0',
+            application: 'ToscripT Professional',
+            created: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
+            
+            // Complete project info
+            projectInfo: {
+                ...projectData.projectInfo,
+                title: projectData.projectInfo.projectName || 'Untitled',
+                author: projectData.projectInfo.prodName || 'Author'
+            },
+            
+            // Raw script content
+            scriptContent: fountainInput?.value || '',
+            
+            // All scenes data
+            scenes: projectData.projectInfo.scenes || [],
+            
+            // App settings
+            settings: {
+                fontSize: fontSize,
+                showSceneNumbers: showSceneNumbers,
+                autoSave: !!autoSaveInterval,
+                currentView: currentView
+            },
+            
+            // Card data from card view
+            cardData: [],
+            
+            // History for undo/redo
+            history: {
+                stack: history.stack.slice(),
+                currentIndex: history.currentIndex
+            }
         };
-        const blob = new Blob([JSON.stringify(filmproj, null, 2)], { type: 'application/json' });
-        downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
+
+        // Capture card data if available
+        const cardContainer = document.getElementById('card-container');
+        if (cardContainer) {
+            const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
+            filmProj.cardData = cards.map(card => {
+                const titleElement = card.querySelector('.card-scene-title');
+                const descriptionElement = card.querySelector('.card-description');
+                const numberElement = card.querySelector('.card-scene-number');
+                
+                return {
+                    sceneId: card.dataset.sceneId,
+                    sceneNumber: numberElement?.value || '',
+                    title: titleElement?.textContent?.trim() || '',
+                    description: descriptionElement?.value || ''
+                };
+            });
+        }
+
+        // Create and download
+        const blob = new Blob([JSON.stringify(filmProj, null, 2)], { 
+            type: 'application/json' 
+        });
+        
+        const filename = `${projectData.projectInfo.projectName || 'Untitled'}.filmproj`;
+        downloadBlob(blob, filename);
+        
+        alert('✅ Complete .filmproj project saved!');
+        
+    } catch (error) {
+        console.error('FilmProj save error:', error);
+        alert('❌ Failed to save project file.');
     }
+}
 
 // FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
 function saveAsPdfEnglish() {
