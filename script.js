@@ -1050,86 +1050,50 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-    // ENHANCED: Complete .filmproj save with all project data
-function saveAsFilmProj() {
+   function saveAsFilmProj() {
     try {
-        // Update project data before saving
+        // Make sure we have the latest data
         if (fountainInput) {
             projectData.projectInfo.scriptContent = fountainInput.value;
-            projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
         }
 
-        // Create comprehensive project file
+        // Create simple, reliable structure
         const filmProj = {
-            fileVersion: '2.0',
-            application: 'ToscripT Professional',
-            created: new Date().toISOString(),
-            lastModified: new Date().toISOString(),
+            version: '2.0',
+            projectName: projectData.projectInfo.projectName || 'Untitled',
+            author: projectData.projectInfo.prodName || 'Author',
             
-            // Complete project info
-            projectInfo: {
-                ...projectData.projectInfo,
-                title: projectData.projectInfo.projectName || 'Untitled',
-                author: projectData.projectInfo.prodName || 'Author'
-            },
-            
-            // Raw script content
+            // THE MAIN SCRIPT CONTENT - this is what we need to restore
             scriptContent: fountainInput?.value || '',
             
-            // All scenes data
-            scenes: projectData.projectInfo.scenes || [],
-            
-            // App settings
+            // Additional data
             settings: {
                 fontSize: fontSize,
                 showSceneNumbers: showSceneNumbers,
-                autoSave: !!autoSaveInterval,
                 currentView: currentView
             },
             
-            // Card data from card view
-            cardData: [],
-            
-            // History for undo/redo
-            history: {
-                stack: history.stack.slice(),
-                currentIndex: history.currentIndex
-            }
+            // Save timestamp
+            savedAt: new Date().toISOString()
         };
 
-        // Capture card data if available
-        const cardContainer = document.getElementById('card-container');
-        if (cardContainer) {
-            const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
-            filmProj.cardData = cards.map(card => {
-                const titleElement = card.querySelector('.card-scene-title');
-                const descriptionElement = card.querySelector('.card-description');
-                const numberElement = card.querySelector('.card-scene-number');
-                
-                return {
-                    sceneId: card.dataset.sceneId,
-                    sceneNumber: numberElement?.value || '',
-                    title: titleElement?.textContent?.trim() || '',
-                    description: descriptionElement?.value || ''
-                };
-            });
-        }
-
-        // Create and download
+        console.log('Saving filmproj with script length:', filmProj.scriptContent.length);
+        
         const blob = new Blob([JSON.stringify(filmProj, null, 2)], { 
             type: 'application/json' 
         });
         
-        const filename = `${projectData.projectInfo.projectName || 'Untitled'}.filmproj`;
+        const filename = `${filmProj.projectName}.filmproj`;
         downloadBlob(blob, filename);
         
-        alert('✅ Complete .filmproj project saved!');
+        alert(`✅ Project saved as ${filename}`);
         
     } catch (error) {
-        console.error('FilmProj save error:', error);
-        alert('❌ Failed to save project file.');
+        console.error('Save error:', error);
+        alert('❌ Failed to save project');
     }
 }
+
 
 // FIXED: .pdf (Selectable Text) - Handles page breaks and library errors
 function saveAsPdfEnglish() {
@@ -1255,7 +1219,6 @@ async function saveAsPdfUnicode() {
     }
 }
 
-   // ENHANCED: Open .fountain, .txt, and .filmproj files from CODE ONE
 function openFountainFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1266,67 +1229,66 @@ function openFountainFile(e) {
         
         if (file.name.endsWith('.filmproj')) {
             try {
-                const filmproj = JSON.parse(content);
+                const filmProj = JSON.parse(content);
+                console.log('Loading filmproj:', filmProj);
                 
                 // Restore project info
-                if (filmproj.projectInfo) {
-                    projectData.projectInfo = { 
-                        ...projectData.projectInfo, 
-                        ...filmproj.projectInfo 
-                    };
+                if (filmProj.projectName) {
+                    projectData.projectInfo.projectName = filmProj.projectName;
                 }
-
+                if (filmProj.author) {
+                    projectData.projectInfo.prodName = filmProj.author;
+                }
+                
                 // Restore settings
-                if (filmproj.settings) {
-                    fontSize = filmproj.settings.fontSize || fontSize;
-                    showSceneNumbers = filmproj.settings.showSceneNumbers !== false;
-                    if (filmproj.settings.autoSave && !autoSaveInterval) {
-                        toggleAutoSave();
+                if (filmProj.settings) {
+                    if (filmProj.settings.fontSize) fontSize = filmProj.settings.fontSize;
+                    if (typeof filmProj.settings.showSceneNumbers === 'boolean') {
+                        showSceneNumbers = filmProj.settings.showSceneNumbers;
                     }
                 }
-
-                // Restore script content
-                let scriptContent = '';
-                if (filmproj.scriptContent) {
-                    scriptContent = filmproj.scriptContent;
-                } else if (filmproj.scenes && Array.isArray(filmproj.scenes)) {
-                    // Rebuild from scenes if needed
-                    filmproj.scenes.forEach(scene => {
-                        scriptContent += scene.heading + '\n';
-                        if (scene.description && Array.isArray(scene.description)) {
-                            scriptContent += scene.description.join('\n') + '\n\n';
-                        }
-                    });
+                
+                // MOST IMPORTANT: Restore script content
+                let scriptToLoad = '';
+                if (filmProj.scriptContent) {
+                    scriptToLoad = filmProj.scriptContent;
+                    console.log('Found scriptContent, length:', scriptToLoad.length);
+                } else {
+                    console.log('No scriptContent found in file');
                 }
-
+                
+                // Load the text into editor
                 if (fountainInput) {
-                    fountainInput.value = scriptContent.trim();
-                    clearPlaceholder();
+                    fountainInput.value = scriptToLoad;
+                    if (scriptToLoad) {
+                        clearPlaceholder();
+                    } else {
+                        setPlaceholder();
+                    }
+                    
+                    // Add to history
+                    history.add(fountainInput.value);
                 }
-
-                // Restore card data if available
-                if (filmproj.cardData && Array.isArray(filmproj.cardData)) {
-                    // You can add card restoration logic here if needed
-                }
-
+                
+                // Update project data
+                projectData.projectInfo.scriptContent = scriptToLoad;
                 saveProjectData();
                 updateSceneNoIndicator();
-                updateAutoSaveIndicator();
                 
-                alert('✅ .filmproj project loaded successfully!');
+                alert(`✅ Project "${filmProj.projectName}" loaded!`);
                 
             } catch (err) {
-                console.error('FilmProj loading error:', err);
-                alert('❌ Invalid .filmproj file format.');
+                console.error('Error loading filmproj:', err);
+                alert('❌ Invalid .filmproj file');
             }
         } else {
-            // Handle .fountain and .txt files
+            // Handle .fountain and .txt files (your working version)
             if (fountainInput) {
                 fountainInput.value = content;
                 clearPlaceholder();
                 history.add(fountainInput.value);
                 saveProjectData();
-                alert(`✅ ${file.name} loaded successfully!`);
+                alert(`✅ ${file.name} loaded!`);
             }
         }
     };
@@ -1334,6 +1296,7 @@ function openFountainFile(e) {
     reader.readAsText(file, 'UTF-8');
 }
 
+    
     // Modal functions
     function createModal(id, title, body, footer) {
         let modal = document.getElementById(id);
