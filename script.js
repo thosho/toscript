@@ -1050,47 +1050,59 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-   function saveAsFilmProj() {
+   // DEBUG: Save function with console logs
+function saveAsFilmProj() {
     try {
-        // Make sure we have the latest data
+        console.log('=== SAVE DEBUG ===');
+        
+        // Get current text from editor
+        const currentText = fountainInput?.value || '';
+        console.log('Text in editor:', currentText.length, 'characters');
+        console.log('First 100 chars:', currentText.substring(0, 100));
+        
+        // Update project data
         if (fountainInput) {
-            projectData.projectInfo.scriptContent = fountainInput.value;
+            projectData.projectInfo.scriptContent = currentText;
+            projectData.projectInfo.scenes = extractScenesFromText(currentText);
         }
-
-        // Create simple, reliable structure
+        
+        // Create file data
         const filmProj = {
-            version: '2.0',
-            projectName: projectData.projectInfo.projectName || 'Untitled',
-            author: projectData.projectInfo.prodName || 'Author',
+            fileVersion: '2.0',
+            application: 'ToscripT Professional',
             
-            // THE MAIN SCRIPT CONTENT - this is what we need to restore
-            scriptContent: fountainInput?.value || '',
+            // Store script in multiple places for safety
+            scriptContent: currentText,
             
-            // Additional data
+            projectInfo: {
+                ...projectData.projectInfo,
+                scriptContent: currentText  // Store here too
+            },
+            
             settings: {
                 fontSize: fontSize,
                 showSceneNumbers: showSceneNumbers,
                 currentView: currentView
             },
             
-            // Save timestamp
             savedAt: new Date().toISOString()
         };
-
-        console.log('Saving filmproj with script length:', filmProj.scriptContent.length);
         
-        const blob = new Blob([JSON.stringify(filmProj, null, 2)], { 
-            type: 'application/json' 
-        });
+        console.log('FilmProj object scriptContent length:', filmProj.scriptContent.length);
+        console.log('FilmProj object projectInfo.scriptContent length:', filmProj.projectInfo.scriptContent.length);
         
-        const filename = `${filmProj.projectName}.filmproj`;
+        const jsonString = JSON.stringify(filmProj, null, 2);
+        console.log('JSON string length:', jsonString.length);
+        
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const filename = `${projectData.projectInfo.projectName || 'Untitled'}.filmproj`;
+        
         downloadBlob(blob, filename);
-        
-        alert(`✅ Project saved as ${filename}`);
+        alert(`✅ Saved ${filename} (${currentText.length} characters)`);
         
     } catch (error) {
         console.error('Save error:', error);
-        alert('❌ Failed to save project');
+        alert('❌ Save failed: ' + error.message);
     }
 }
 
@@ -1219,83 +1231,78 @@ async function saveAsPdfUnicode() {
     }
 }
 
+
+// DEBUG: Load function with console logs
 function openFountainFile(e) {
     const file = e.target.files[0];
     if (!file) return;
+    
+    console.log('=== LOAD DEBUG ===');
+    console.log('File name:', file.name);
+    console.log('File size:', file.size, 'bytes');
 
     const reader = new FileReader();
     reader.onload = (e) => {
         const content = e.target.result;
+        console.log('File content length:', content.length);
         
         if (file.name.endsWith('.filmproj')) {
             try {
                 const filmProj = JSON.parse(content);
-                console.log('Loading filmproj:', filmProj);
+                console.log('Parsed filmproj keys:', Object.keys(filmProj));
                 
-                // Restore project info
-                if (filmProj.projectName) {
-                    projectData.projectInfo.projectName = filmProj.projectName;
-                }
-                if (filmProj.author) {
-                    projectData.projectInfo.prodName = filmProj.author;
-                }
+                // Try to find script content
+                let foundScript = '';
                 
-                // Restore settings
-                if (filmProj.settings) {
-                    if (filmProj.settings.fontSize) fontSize = filmProj.settings.fontSize;
-                    if (typeof filmProj.settings.showSceneNumbers === 'boolean') {
-                        showSceneNumbers = filmProj.settings.showSceneNumbers;
+                if (filmProj.scriptContent) {
+                    foundScript = filmProj.scriptContent;
+                    console.log('Found scriptContent:', foundScript.length, 'characters');
+                } else if (filmProj.projectInfo && filmProj.projectInfo.scriptContent) {
+                    foundScript = filmProj.projectInfo.scriptContent;
+                    console.log('Found projectInfo.scriptContent:', foundScript.length, 'characters');
+                } else {
+                    console.log('NO SCRIPT CONTENT FOUND!');
+                    console.log('Available keys:', Object.keys(filmProj));
+                    if (filmProj.projectInfo) {
+                        console.log('ProjectInfo keys:', Object.keys(filmProj.projectInfo));
                     }
                 }
                 
-                // MOST IMPORTANT: Restore script content
-                let scriptToLoad = '';
-                if (filmProj.scriptContent) {
-                    scriptToLoad = filmProj.scriptContent;
-                    console.log('Found scriptContent, length:', scriptToLoad.length);
-                } else {
-                    console.log('No scriptContent found in file');
-                }
+                console.log('Script to load (first 100 chars):', foundScript.substring(0, 100));
                 
-                // Load the text into editor
+                // Load into editor
                 if (fountainInput) {
-                    fountainInput.value = scriptToLoad;
-                    if (scriptToLoad) {
+                    console.log('Current editor value before load:', fountainInput.value.length, 'chars');
+                    fountainInput.value = foundScript;
+                    console.log('Editor value after load:', fountainInput.value.length, 'chars');
+                    
+                    if (foundScript.trim()) {
                         clearPlaceholder();
+                        console.log('Placeholder cleared');
                     } else {
                         setPlaceholder();
+                        console.log('Placeholder set');
                     }
-                    
-                    // Add to history
-                    history.add(fountainInput.value);
                 }
                 
-                // Update project data
-                projectData.projectInfo.scriptContent = scriptToLoad;
-                saveProjectData();
-                updateSceneNoIndicator();
-                
-                alert(`✅ Project "${filmProj.projectName}" loaded!`);
+                alert(`✅ Loaded ${file.name} (${foundScript.length} characters)`);
                 
             } catch (err) {
-                console.error('Error loading filmproj:', err);
-                alert('❌ Invalid .filmproj file');
+                console.error('Parse error:', err);
+                alert('❌ Invalid file: ' + err.message);
             }
         } else {
-            // Handle .fountain and .txt files (your working version)
+            // Regular text files
             if (fountainInput) {
                 fountainInput.value = content;
                 clearPlaceholder();
-                history.add(fountainInput.value);
-                saveProjectData();
-                alert(`✅ ${file.name} loaded!`);
+                alert(`✅ ${file.name} loaded (${content.length} characters)`);
             }
         }
     };
-
+    
     reader.readAsText(file, 'UTF-8');
 }
-
     
     // Modal functions
     function createModal(id, title, body, footer) {
