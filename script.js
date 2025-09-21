@@ -1186,46 +1186,84 @@ async function saveAsPdfUnicode() {
     }
 }
 
-    function openFountainFile(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+   // ENHANCED: Open .fountain, .txt, and .filmproj files from CODE ONE
+function openFountainFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const content = e.target.result;
-
-            if (file.name.endsWith('.filmproj')) {
-                try {
-                    const filmproj = JSON.parse(content);
-                    if (filmproj.projectInfo) {
-                        projectData.projectInfo = { ...projectData.projectInfo, ...filmproj.projectInfo };
-
-                        let fountainText = '';
-                        if (filmproj.scenes && Array.isArray(filmproj.scenes)) {
-                            filmproj.scenes.forEach(scene => {
-                                fountainText += scene.heading + '\n';
-                                if (scene.description && Array.isArray(scene.description)) {
-                                    fountainText += scene.description.join('\n') + '\n\n';
-                                }
-                            });
-                        }
-
-                        if (fountainInput) fountainInput.value = fountainText.trim();
-                        clearPlaceholder();
-                    }
-                } catch (err) {
-                    alert('Invalid .filmproj file format');
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const content = e.target.result;
+        
+        if (file.name.endsWith('.filmproj')) {
+            try {
+                const filmproj = JSON.parse(content);
+                
+                // Restore project info
+                if (filmproj.projectInfo) {
+                    projectData.projectInfo = { 
+                        ...projectData.projectInfo, 
+                        ...filmproj.projectInfo 
+                    };
                 }
-            } else {
-                if (fountainInput) fountainInput.value = content;
-                clearPlaceholder();
-            }
 
-            history.add(fountainInput.value);
-            saveProjectData();
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
+                // Restore settings
+                if (filmproj.settings) {
+                    fontSize = filmproj.settings.fontSize || fontSize;
+                    showSceneNumbers = filmproj.settings.showSceneNumbers !== false;
+                    if (filmproj.settings.autoSave && !autoSaveInterval) {
+                        toggleAutoSave();
+                    }
+                }
+
+                // Restore script content
+                let scriptContent = '';
+                if (filmproj.scriptContent) {
+                    scriptContent = filmproj.scriptContent;
+                } else if (filmproj.scenes && Array.isArray(filmproj.scenes)) {
+                    // Rebuild from scenes if needed
+                    filmproj.scenes.forEach(scene => {
+                        scriptContent += scene.heading + '\n';
+                        if (scene.description && Array.isArray(scene.description)) {
+                            scriptContent += scene.description.join('\n') + '\n\n';
+                        }
+                    });
+                }
+
+                if (fountainInput) {
+                    fountainInput.value = scriptContent.trim();
+                    clearPlaceholder();
+                }
+
+                // Restore card data if available
+                if (filmproj.cardData && Array.isArray(filmproj.cardData)) {
+                    // You can add card restoration logic here if needed
+                }
+
+                saveProjectData();
+                updateSceneNoIndicator();
+                updateAutoSaveIndicator();
+                
+                alert('✅ .filmproj project loaded successfully!');
+                
+            } catch (err) {
+                console.error('FilmProj loading error:', err);
+                alert('❌ Invalid .filmproj file format.');
+            }
+        } else {
+            // Handle .fountain and .txt files
+            if (fountainInput) {
+                fountainInput.value = content;
+                clearPlaceholder();
+                history.add(fountainInput.value);
+                saveProjectData();
+                alert(`✅ ${file.name} loaded successfully!`);
+            }
+        }
+    };
+
+    reader.readAsText(file, 'UTF-8');
+}
 
     // Modal functions
     function createModal(id, title, body, footer) {
