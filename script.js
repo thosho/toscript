@@ -1,10 +1,4 @@
 
-// ToscripT Professional - Full Complete Working Version (1625+ Lines)
-// Based on your latest JS code with all fixes
-// - Full .filmproj save/load (all data including text, cards, settings)
-// - Two-way sync between script and card view
-// - Scene numbers on right side
-// - Proper preview formatting
 
 document.addEventListener('DOMContentLoaded', () => {
     // Global variables
