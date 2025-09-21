@@ -356,12 +356,11 @@ function parseFountain(input) {
         scriptView?.classList.add('active');
         if (scriptHeader) scriptHeader.style.display = 'flex';
         renderEnhancedScript();
-    } else if (view === 'card') {
-        syncCardsToEditor();  // Card to script sync
-        syncScriptToCards();  // Script to card sync
-        cardView?.classList.add('active');
-        if (cardHeader) cardHeader.style.display = 'flex';
-    } else {
+  } else if (view === 'card') {
+    syncScriptToCards();  // Sync on switch
+    cardView?.classList.add('active');
+    if (cardHeader) cardHeader.style.display = 'flex';
+ } else {
         writeView?.classList.add('active');
         if (mainHeader) mainHeader.style.display = 'flex';
         setTimeout(() => {
@@ -1095,10 +1094,11 @@ function saveAsFilmProj() {
             historyStack: history.stack,
             historyIndex: history.currentIndex,
             cardData: cardData,  // Saves all card data
+            scriptText: fountainInput.value || '',  // Dedicated field for script text
             savedAt: new Date().toISOString()
         };
 
-        const blob = new Blob([JSON.stringify(filmProj)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(filmProj, null, 2)], { type: 'application/json' });
         downloadBlob(blob, (projectData.projectInfo.projectName || 'Untitled') + '.filmproj');
         alert('✅ Complete project saved!');
     } catch (error) {
@@ -1132,8 +1132,8 @@ function openFountainFile(e) {
                 history.currentIndex = data.historyIndex || history.currentIndex;
                 history.updateButtons();
 
-                // Restore script text
-                const scriptText = projectData.projectInfo.scriptContent || '';
+                // Restore script text (try dedicated field first)
+                const scriptText = data.scriptText || projectData.projectInfo.scriptContent || '';
                 if (fountainInput) {
                     fountainInput.value = scriptText;
                     if (scriptText.trim()) {
@@ -1512,8 +1512,8 @@ function openFountainFile(e) {
             projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
             // If in card view, re-render cards but DON'T call syncCardsToEditor() here
             if (currentView === 'card') {
-                renderEnhancedCardView();
-            }
+    syncScriptToCards();
+}
             console.log('Updated scenes from text input - no overwrite');
         }, 500);
     });
