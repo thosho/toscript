@@ -1050,63 +1050,48 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-// SAVE EVERYTHING - All project data
+// Save the entire project as .filmproj
 function saveAsFilmProj() {
     try {
-        // Update current state first
+        // Update project data with current script
         if (fountainInput) {
             projectData.projectInfo.scriptContent = fountainInput.value;
             projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
         }
 
-        // Capture ALL current state
-        const completeData = {
-            // Project metadata
-            fileVersion: '2.0',
-            application: 'ToscripT Professional',
-            created: new Date().toISOString(),
-            
-            // ALL project data
-            projectData: projectData,
-            
-            // ALL app settings
-            appSettings: {
-                fontSize: fontSize,
-                autoSaveInterval: !!autoSaveInterval,
-                showSceneNumbers: showSceneNumbers,
-                currentView: currentView
-            },
-            
-            // Current script text
-            currentScript: fountainInput?.value || '',
-            
-            // History
-            history: {
-                stack: history.stack,
-                currentIndex: history.currentIndex
-            },
-            
-            // Card data
-            cardData: getCardData(),
-            
-            // Everything else
-            placeholderText: placeholderText
+        // Create the data object to save
+        const filmProjData = {
+            version: '1.0',
+            projectData: JSON.parse(JSON.stringify(projectData)), // Deep copy all project data
+            fontSize: fontSize,
+            showSceneNumbers: showSceneNumbers,
+            currentView: currentView,
+            historyStack: history.stack.slice(),
+            historyIndex: history.currentIndex,
+            savedAt: new Date().toISOString()
         };
 
-        const blob = new Blob([JSON.stringify(completeData, null, 2)], { 
-            type: 'application/json' 
-        });
-        
-        downloadBlob(blob, `${projectData.projectInfo.projectName}.filmproj`);
-        alert('✅ Complete project saved!');
-        
+        // Add card data
+        const cardContainer = document.getElementById('card-container');
+        if (cardContainer) {
+            filmProjData.cardData = Array.from(cardContainer.querySelectorAll('.scene-card')).map(card => ({
+                id: card.dataset.sceneId,
+                title: card.querySelector('.card-scene-title')?.textContent || '',
+                description: card.querySelector('.card-description')?.value || '',
+                number: card.querySelector('.card-scene-number')?.value || ''
+            }));
+        }
+
+        const blob = new Blob([JSON.stringify(filmProjData, null, 2)], { type: 'application/json' });
+        downloadBlob(blob, (projectData.projectInfo.projectName || 'Untitled') + '.filmproj');
+        alert('✅ Project saved successfully!');
     } catch (error) {
         console.error('Save error:', error);
-        alert('❌ Save failed');
+        alert('❌ Failed to save project.');
     }
 }
 
-// LOAD EVERYTHING - Restore complete state
+// Load the entire project from .filmproj
 function openFountainFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1114,72 +1099,70 @@ function openFountainFile(e) {
     const reader = new FileReader();
     reader.onload = (e) => {
         const content = e.target.result;
-        
+
         if (file.name.endsWith('.filmproj')) {
             try {
                 const data = JSON.parse(content);
-                
-                // Restore ALL project data
+
+                // Restore project data
                 if (data.projectData) {
                     projectData = data.projectData;
                 }
-                
-                // Restore ALL app settings
-                if (data.appSettings) {
-                    fontSize = data.appSettings.fontSize || fontSize;
-                    showSceneNumbers = data.appSettings.showSceneNumbers !== false;
-                    currentView = data.appSettings.currentView || 'write';
-                    
-                    if (data.appSettings.autoSaveInterval && !autoSaveInterval) {
-                        toggleAutoSave();
-                    }
-                }
-                
-                // Restore script content
-                const scriptText = data.currentScript || data.projectData?.projectInfo?.scriptContent || '';
+
+                // Restore settings
+                fontSize = data.fontSize || 16;
+                showSceneNumbers = data.showSceneNumbers !== false;
+                currentView = data.currentView || 'write';
+
+                // Restore history
+                history.stack = data.historyStack || [];
+                history.currentIndex = data.historyIndex || 0;
+                history.updateButtons();
+
+                // Restore script text
+                const scriptText = projectData.projectInfo.scriptContent || '';
                 if (fountainInput) {
                     fountainInput.value = scriptText;
-                    if (scriptText) clearPlaceholder(); else setPlaceholder();
+                    if (scriptText.trim()) {
+                        clearPlaceholder();
+                    } else {
+                        setPlaceholder();
+                    }
                 }
-                
-                // Restore history
-                if (data.history) {
-                    history.stack = data.history.stack || [];
-                    history.currentIndex = data.history.currentIndex || 0;
-                    history.updateButtons();
+
+                // Restore scenes
+                projectData.projectInfo.scenes = extractScenesFromText(scriptText);
+
+                // Restore cards
+                if (data.cardData && Array.isArray(data.cardData)) {
+                    renderEnhancedCardView(); // This will use the restored scenes
                 }
-                
-                // Restore card data
-                if (data.cardData) {
-                    restoreCardData(data.cardData);
-                }
-                
-                // Update indicators
+
+                saveProjectData();
                 updateSceneNoIndicator();
                 updateAutoSaveIndicator();
-                
-                // Save to localStorage
-                saveProjectData();
-                
-                alert(`✅ Complete project "${projectData.projectInfo.projectName}" loaded!`);
-                
+                switchView(currentView);
+
+                alert('✅ Project loaded successfully!');
             } catch (err) {
                 console.error('Load error:', err);
-                alert('❌ Invalid filmproj file');
+                alert('❌ Invalid .filmproj file.');
             }
         } else {
-            // Regular files
-            fountainInput.value = content;
-            clearPlaceholder();
-            history.add(fountainInput.value);
-            saveProjectData();
-            alert(`✅ ${file.name} loaded!`);
+            // Handle .fountain and .txt
+            if (fountainInput) {
+                fountainInput.value = content;
+                clearPlaceholder();
+                history.add(fountainInput.value);
+                saveProjectData();
+                alert('✅ File loaded!');
+            }
         }
     };
-    
+
     reader.readAsText(file, 'UTF-8');
 }
-
+    
 // Helper functions
 function getCardData() {
     const cardContainer = document.getElementById('card-container');
