@@ -357,10 +357,10 @@ function parseFountain(input) {
         if (scriptHeader) scriptHeader.style.display = 'flex';
         renderEnhancedScript();
     } else if (view === 'card') {
-        syncAll(true); // Pass true for full sync on switch
+        syncCardsToEditor();  // Card to script sync
+        syncScriptToCards();  // Script to card sync
         cardView?.classList.add('active');
         if (cardHeader) cardHeader.style.display = 'flex';
-        renderEnhancedCardView();
     } else {
         writeView?.classList.add('active');
         if (mainHeader) mainHeader.style.display = 'flex';
@@ -370,6 +370,7 @@ function parseFountain(input) {
         }, 200);
     }
 }
+
 
 
     // Filter functionality
@@ -602,6 +603,17 @@ if (line.toUpperCase().startsWith('INT.') || line.toUpperCase().startsWith('EXT.
             bindCardEditingEvents();
         }
     }
+
+    // Parse script to generate cards (script to card sync)
+function syncScriptToCards() {
+    if (currentView !== 'card') return;
+
+    const scriptText = fountainInput.value;
+    const scenes = extractScenesFromText(scriptText);
+    
+    projectData.projectInfo.scenes = scenes;
+    renderEnhancedCardView();
+}
 
     // Card editing functionality
     function bindCardEditingEvents() {
@@ -1050,48 +1062,51 @@ async function saveAllCardsAsImages() {
         downloadBlob(blob, `${projectData.projectInfo.projectName}.fountain`);
     }
 
-// Save the entire project as .filmproj
 function saveAsFilmProj() {
     try {
-        // Update project data with current script
+        // Update project data with current script and scenes
         if (fountainInput) {
             projectData.projectInfo.scriptContent = fountainInput.value;
             projectData.projectInfo.scenes = extractScenesFromText(fountainInput.value);
         }
 
-        // Create the data object to save
-        const filmProjData = {
+        // Capture card data
+        const cardData = [];
+        const cardContainer = document.getElementById('card-container');
+        if (cardContainer) {
+            const cards = Array.from(cardContainer.querySelectorAll('.scene-card'));
+            cards.forEach(card => {
+                cardData.push({
+                    sceneId: card.dataset.sceneId,
+                    sceneNumber: card.dataset.sceneNumber,
+                    title: card.querySelector('.card-scene-title')?.textContent?.trim() || '',
+                    description: card.querySelector('.card-description')?.value || ''
+                });
+            });
+        }
+
+        // Create complete data object
+        const filmProj = {
             version: '1.0',
-            projectData: JSON.parse(JSON.stringify(projectData)), // Deep copy all project data
+            projectData: projectData,  // Saves all project info
             fontSize: fontSize,
             showSceneNumbers: showSceneNumbers,
             currentView: currentView,
-            historyStack: history.stack.slice(),
+            historyStack: history.stack,
             historyIndex: history.currentIndex,
+            cardData: cardData,  // Saves all card data
             savedAt: new Date().toISOString()
         };
 
-        // Add card data
-        const cardContainer = document.getElementById('card-container');
-        if (cardContainer) {
-            filmProjData.cardData = Array.from(cardContainer.querySelectorAll('.scene-card')).map(card => ({
-                id: card.dataset.sceneId,
-                title: card.querySelector('.card-scene-title')?.textContent || '',
-                description: card.querySelector('.card-description')?.value || '',
-                number: card.querySelector('.card-scene-number')?.value || ''
-            }));
-        }
-
-        const blob = new Blob([JSON.stringify(filmProjData, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(filmProj)], { type: 'application/json' });
         downloadBlob(blob, (projectData.projectInfo.projectName || 'Untitled') + '.filmproj');
-        alert('✅ Project saved successfully!');
+        alert('✅ Complete project saved!');
     } catch (error) {
         console.error('Save error:', error);
-        alert('❌ Failed to save project.');
+        alert('❌ Save failed');
     }
 }
 
-// Load the entire project from .filmproj
 function openFountainFile(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -1105,18 +1120,16 @@ function openFountainFile(e) {
                 const data = JSON.parse(content);
 
                 // Restore project data
-                if (data.projectData) {
-                    projectData = data.projectData;
-                }
+                projectData = data.projectData || projectData;
 
                 // Restore settings
-                fontSize = data.fontSize || 16;
-                showSceneNumbers = data.showSceneNumbers !== false;
-                currentView = data.currentView || 'write';
+                fontSize = data.fontSize || fontSize;
+                showSceneNumbers = data.showSceneNumbers || showSceneNumbers;
+                currentView = data.currentView || currentView;
 
                 // Restore history
-                history.stack = data.historyStack || [];
-                history.currentIndex = data.historyIndex || 0;
+                history.stack = data.historyStack || history.stack;
+                history.currentIndex = data.historyIndex || history.currentIndex;
                 history.updateButtons();
 
                 // Restore script text
@@ -1135,34 +1148,63 @@ function openFountainFile(e) {
 
                 // Restore cards
                 if (data.cardData && Array.isArray(data.cardData)) {
-                    renderEnhancedCardView(); // This will use the restored scenes
+                    const cardContainer = document.getElementById('card-container');
+                    if (cardContainer) {
+                        cardContainer.innerHTML = data.cardData.map((card, index) => {
+                            const sceneNum = index + 1;
+                            return `
+                                <div class="scene-card card-for-export" data-scene-id="${card.sceneId || sceneNum}" data-scene-number="${card.sceneNumber || sceneNum}">
+                                    <div class="scene-card-content">
+                                        <div class="card-header">
+                                            <div class="card-scene-title" contenteditable="true" data-placeholder="Enter scene heading...">${card.title}</div>
+                                            <input class="card-scene-number" type="text" value="${sceneNum}" maxlength="4" data-scene-id="${sceneNum}">
+                                        </div>
+                                        <div class="card-body">
+                                            <textarea class="card-description" placeholder="Enter detailed scene description..." data-scene-id="${sceneNum}">${card.description}</textarea>
+                                        </div>
+                                        <div class="card-watermark">TO SCRIPT</div>
+                                    </div>
+                                    <div class="card-actions">
+                                        <button class="icon-btn share-card-btn" title="Share Scene" data-scene-id="${sceneNum}">
+                                            <i class="fas fa-share-alt"></i>
+                                        </button>
+                                        <button class="icon-btn delete-card-btn" title="Delete Scene" data-scene-id="${sceneNum}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        bindCardEditingEvents();  // Rebind events for loaded cards
+                    }
                 }
 
                 saveProjectData();
                 updateSceneNoIndicator();
                 updateAutoSaveIndicator();
-                switchView(currentView);
+                switchView(currentView);  // Restore saved view
 
-                alert('✅ Project loaded successfully!');
+                alert('✅ Complete project loaded!');
             } catch (err) {
                 console.error('Load error:', err);
                 alert('❌ Invalid .filmproj file.');
             }
         } else {
-            // Handle .fountain and .txt
+            // Handle .fountain and .txt files (your working version)
             if (fountainInput) {
                 fountainInput.value = content;
                 clearPlaceholder();
                 history.add(fountainInput.value);
                 saveProjectData();
-                alert('✅ File loaded!');
+                alert(`✅ ${file.name} loaded!`);
             }
         }
     };
 
     reader.readAsText(file, 'UTF-8');
 }
-    
+
+        
 // Helper functions
 function getCardData() {
     const cardContainer = document.getElementById('card-container');
